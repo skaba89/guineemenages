@@ -1,0 +1,234 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  nom       String
+  prenom    String
+  telephone String?
+  role      String   @default("COMPTABLE")  // ADMIN, MANAGER, COMPTABLE, EMPLOYE
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  nom       String
+  email     String?
+  telephone String?
+  adresse   String?
+  ville     String?
+  pays      String   @default("Guinée")
+  ninea     String?
+  logo      String?
+  plan      String   @default("FREE")  // FREE, STANDARD, ENTERPRISE
+  devise    String   @default("GNF")
+  users     User[]
+  clients   Client[]
+  produits  Produit[]
+  factures  Facture[]
+  employes  Employe[]
+  bulletins BulletinPaie[]
+  depenses  Depense[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Client {
+  id           String   @id @default(cuid())
+  nom          String
+  email        String?
+  telephone    String?
+  adresse      String?
+  ville        String?
+  pays         String   @default("Guinée")
+  type         String   @default("PARTICULIER") // PARTICULIER, ENTREPRISE
+  totalAchats  Int      @default(0)
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id])
+  factures     Facture[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+model Produit {
+  id            String   @id @default(cuid())
+  nom           String
+  description   String?
+  prixUnitaire  Int
+  unite         String   @default("Unité")
+  stockActuel   Int      @default(0)
+  stockMin      Int      @default(0)
+  categorie     String?
+  actif         Boolean  @default(true)
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id])
+  lignesFacture LigneFacture[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+model Facture {
+  id            String   @id @default(cuid())
+  numero        String
+  clientId      String
+  client        Client   @relation(fields: [clientId], references: [id])
+  dateEmission  DateTime @default(now())
+  dateEcheance  DateTime
+  montantHT     Int
+  montantTVA    Int
+  montantTTC    Int
+  statut        String   @default("BROUILLON") // BROUILLON, ENVOYEE, PAYEE, EN_RETARD, ANNULEE
+  modePaiement  String?  // ESPECES, VIREMENT, ORANGE_MONEY, MTN_MONEY, CHEQUE
+  notes         String?
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id])
+  lignes        LigneFacture[]
+  paiements     Paiement[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([numero, companyId])
+  @@index([companyId])
+}
+
+model LigneFacture {
+  id            String   @id @default(cuid())
+  factureId     String
+  facture       Facture  @relation(fields: [factureId], references: [id], onDelete: Cascade)
+  produitId     String?
+  produit       Produit? @relation(fields: [produitId], references: [id])
+  description   String
+  quantite      Int
+  prixUnitaire  Int
+  tauxTVA       Int      @default(18)
+  montantHT     Int
+  montantTVA    Int
+  montantTTC    Int
+
+  @@index([factureId])
+}
+
+model Paiement {
+  id         String   @id @default(cuid())
+  factureId  String
+  facture    Facture  @relation(fields: [factureId], references: [id])
+  montant    Int
+  date       DateTime @default(now())
+  mode       String   // ESPECES, VIREMENT, ORANGE_MONEY, MTN_MONEY, CHEQUE, CARTE
+  reference  String?
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  @@index([factureId])
+}
+
+model Employe {
+  id            String   @id @default(cuid())
+  matricule     String
+  nom           String
+  prenom        String
+  email         String?
+  telephone     String?
+  adresse       String?
+  dateNaissance DateTime?
+  dateEmbauche  DateTime
+  dateDepart    DateTime?
+  poste         String
+  departement   String?
+  salaireBase   Int
+  typeContrat   String   @default("CDI") // CDI, CDD, APPRENTISSAGE, STAGE
+  actif         Boolean  @default(true)
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id])
+  bulletins     BulletinPaie[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([matricule, companyId])
+  @@index([companyId])
+}
+
+model BulletinPaie {
+  id                  String   @id @default(cuid())
+  employeId           String
+  employe             Employe  @relation(fields: [employeId], references: [id])
+  mois                Int
+  annee               Int
+  salaireBase         Int
+  heuresSupplementaires Int    @default(0)
+  montantHeuresSupp   Int      @default(0)
+  primes              Int      @default(0)
+  indemnites          Int      @default(0)
+  autresAvantages     Int      @default(0)
+  brutTotal           Int
+  cnssEmploye         Int
+  cnssEmployeur       Int
+  ipr                 Int
+  autresRetenues      Int      @default(0)
+  acomptes            Int      @default(0)
+  netAPayer           Int
+  coutTotalEmployeur  Int
+  statut              String   @default("BROUILLON") // BROUILLON, VALIDE, PAYE
+  datePaiement        DateTime?
+  companyId           String
+  company             Company  @relation(fields: [companyId], references: [id])
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([employeId, mois, annee])
+  @@index([companyId])
+}
+
+model Depense {
+  id            String   @id @default(cuid())
+  description   String
+  montant       Int
+  categorie     String
+  date          DateTime @default(now())
+  modePaiement  String   // ESPECES, VIREMENT, ORANGE_MONEY, MTN_MONEY, CHEQUE, CARTE
+  notes         String?
+  recuUrl       String?
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+model SmsLog {
+  id        String   @id @default(cuid())
+  telephone String
+  message   String
+  statut    String
+  erreur    String?
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  table     String
+  recordId  String
+  userId    String?
+  details   String?
+  createdAt DateTime @default(now())
+}
