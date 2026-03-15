@@ -12,6 +12,7 @@ import employeRoutes from './routes/employes.routes';
 import paieRoutes from './routes/paie.routes';
 import depenseRoutes from './routes/depenses.routes';
 import dashboardRoutes from './routes/dashboard.routes';
+import exportRoutes from './routes/exports.routes';
 
 export const prisma = new PrismaClient();
 
@@ -37,6 +38,7 @@ app.use('/api/employes', employeRoutes);
 app.use('/api/paie', paieRoutes);
 app.use('/api/depenses', depenseRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/exports', exportRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

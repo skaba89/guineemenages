@@ -333,6 +333,61 @@ class ApiClient {
   async getAlertes() {
     return this.request<{ stockBas: any[]; facturesRetard: any[] }>('/dashboard/alertes');
   }
+
+  // ============ EXPORTS ============
+  async exportClients() {
+    const token = this.getToken();
+    const response = await fetch(`${this.baseUrl}/exports/clients`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.blob();
+  }
+
+  async exportFactures(params?: { statut?: string; startDate?: string; endDate?: string }) {
+    const query = new URLSearchParams();
+    if (params?.statut) query.set('statut', params.statut);
+    if (params?.startDate) query.set('startDate', params.startDate);
+    if (params?.endDate) query.set('endDate', params.endDate);
+
+    const token = this.getToken();
+    const response = await fetch(`${this.baseUrl}/exports/factures?${query.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.blob();
+  }
+
+  async exportEmployes() {
+    const token = this.getToken();
+    const response = await fetch(`${this.baseUrl}/exports/employes`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.blob();
+  }
+
+  async exportPaie(params?: { mois?: number; annee?: number }) {
+    const query = new URLSearchParams();
+    if (params?.mois) query.set('mois', params.mois.toString());
+    if (params?.annee) query.set('annee', params.annee.toString());
+
+    const token = this.getToken();
+    const response = await fetch(`${this.baseUrl}/exports/paie?${query.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.blob();
+  }
+
+  async exportDepenses(params?: { categorie?: string; startDate?: string; endDate?: string }) {
+    const query = new URLSearchParams();
+    if (params?.categorie) query.set('categorie', params.categorie);
+    if (params?.startDate) query.set('startDate', params.startDate);
+    if (params?.endDate) query.set('endDate', params.endDate);
+
+    const token = this.getToken();
+    const response = await fetch(`${this.baseUrl}/exports/depenses?${query.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.blob();
+  }
 }
 
 export const api = new ApiClient(API_BASE_URL);
