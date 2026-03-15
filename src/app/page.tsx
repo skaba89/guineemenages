@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { LoginPage } from '@/components/pages/login-page';
+import { RegisterPage } from '@/components/pages/register-page';
 import { DashboardPage } from '@/components/pages/dashboard-page';
 import { ClientsPage } from '@/components/pages/clients-page';
 import { ProduitsPage } from '@/components/pages/produits-page';
@@ -29,15 +30,34 @@ const pageConfig: Record<string, { title: string; subtitle?: string }> = {
 
 export default function Home() {
   const [currentPage, setCurrentPage] = useState('dashboard');
-  const { isAuthenticated, login } = useAppStore();
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const { isAuthenticated, login, register } = useAppStore();
 
   const handleLogin = async (email: string, password: string) => {
     const result = await login(email, password);
     return result;
   };
 
+  const handleRegister = async (data: { email: string; password: string; nom: string; prenom: string; companyName: string }) => {
+    const result = await register(data);
+    return result;
+  };
+
   if (!isAuthenticated) {
-    return <LoginPage onLogin={handleLogin} />;
+    if (authMode === 'register') {
+      return (
+        <RegisterPage
+          onRegister={handleRegister}
+          onSwitchToLogin={() => setAuthMode('login')}
+        />
+      );
+    }
+    return (
+      <LoginPage
+        onLogin={handleLogin}
+        onSwitchToRegister={() => setAuthMode('register')}
+      />
+    );
   }
 
   const renderPage = () => {

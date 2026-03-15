@@ -210,6 +210,27 @@ class ApiClient {
     return this.request(`/factures/${id}`, { method: 'DELETE' });
   }
 
+  async getFacturePDF(id: string) {
+    const token = this.getToken();
+    const headers: HeadersInit = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    try {
+      const response = await fetch(`${this.baseUrl}/factures/${id}/pdf`, { headers });
+      
+      if (!response.ok) {
+        return { success: false, message: 'Erreur lors de la génération du PDF' };
+      }
+
+      const blob = await response.blob();
+      return { success: true, data: blob };
+    } catch (error) {
+      return { success: false, message: 'Erreur de connexion au serveur' };
+    }
+  }
+
   // ============ EMPLOYES ============
   async getEmployes(params?: { departement?: string; search?: string; page?: number; limit?: number }) {
     const query = new URLSearchParams();

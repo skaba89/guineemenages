@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../index';
 import { authMiddleware } from '../middlewares/auth.middleware';
+import { generateInvoicePDF } from '../utils/pdf-generator';
 
 const router = Router();
 router.use(authMiddleware);
@@ -167,6 +168,79 @@ router.delete('/:id', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Delete facture error:', error);
     res.status(500).json({ success: false, message: 'Erreur serveur' });
+  }
+});
+
+// GET /api/factures/:id/pdf
+router.get('/:id/pdf', async (req: Request, res: Response) => {
+  try {
+    const facture = await prisma.facture.findFirst({
+      where: { id: req.params.id, companyId: req.user!.companyId },
+      include: {
+        client: true,
+        lignes: { include: { produit: true } }
+      }
+    });
+
+    if (!facture) {
+      return res.status(404).json({ success: false, message: 'Facture non trouvée' });
+    }
+
+    // Get company info
+    const company = await prisma.company.findUnique({
+      where: { id: req.user!.companyId }
+    });
+
+    if (!company) {
+      return res.status(404).json({ success: false, message: 'Entreprise non trouvée' });
+    }
+
+    // Generate PDF
+    const pdfBuffer = await generateInvoicePDF({
+      numero: facture.numero,
+      dateEmission: facture.dateEmission,
+      dateEcheance: facture.dateEcheance,
+      statut: facture.statut,
+      modePaiement: facture.modePaiement || undefined,
+      notes: facture.notes || undefined,
+      montantHT: facture.montantHT,
+      montantTVA: facture.montantTVA,
+      montantTTC: facture.montantTTC,
+      client: {
+        nom: facture.client.nom,
+        email: facture.client.email || undefined,
+        telephone: facture.client.telephone || undefined,
+        adresse: facture.client.adresse || undefined,
+        ville: facture.client.ville || undefined,
+        pays: facture.client.pays || undefined
+      },
+      company: {
+        nom: company.nom,
+        email: company.email || undefined,
+        telephone: company.telephone || undefined,
+        adresse: company.adresse || undefined,
+        ville: company.ville || undefined,
+        pays: company.pays || undefined,
+        ninea: company.ninea || undefined
+      },
+      lignes: facture.lignes.map(l => ({
+        description: l.description,
+        quantite: l.quantite,
+        prixUnitaire: l.prixUnitaire,
+        tauxTVA: l.tauxTVA,
+        montantHT: l.montantHT,
+        montantTVA: l.montantTVA,
+        montantTTC: l.montantTTC
+      }))
+    });
+
+    // Send PDF
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="facture-${facture.numero}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Generate PDF error:', error);
+    res.status(500).json({ success: false, message: 'Erreur lors de la génération du PDF' });
   }
 });
 
