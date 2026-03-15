@@ -32,8 +32,8 @@ export default function Home() {
   const { isAuthenticated, login } = useAppStore();
 
   const handleLogin = async (email: string, password: string) => {
-    const success = await login(email, password);
-    return success;
+    const result = await login(email, password);
+    return result;
   };
 
   if (!isAuthenticated) {

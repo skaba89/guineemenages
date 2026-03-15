@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface LoginPageProps {
-  onLogin: (email: string, password: string) => Promise<boolean>;
+  onLogin: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
 }
 
 export function LoginPage({ onLogin }: LoginPageProps) {
@@ -23,10 +23,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     setError('');
     setIsLoading(true);
 
-    const success = await onLogin(email, password);
+    const result = await onLogin(email, password);
     
-    if (!success) {
-      setError('Email ou mot de passe incorrect');
+    if (!result.success) {
+      setError(result.message || 'Email ou mot de passe incorrect');
     }
     setIsLoading(false);
   };
