@@ -7,45 +7,171 @@ datasource db {
   url      = "file:./dev.db"
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  nom       String
-  prenom    String
-  telephone String?
-  role      String   @default("COMPTABLE")  // ADMIN, MANAGER, COMPTABLE, EMPLOYE
-  companyId String
-  company   Company  @relation(fields: [companyId], references: [id])
-  actif     Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// ============================================================================
+// PLAN D'ABONNEMENT
+// ============================================================================
+
+model PlanAbonnement {
+  id              String   @id @default(cuid())
+  nom             String   // PETITE, MOYENNE, GRANDE, ENTERPRISE
+  description     String?
+  prixMensuel     Int      @default(0)    // En centimes
+  prixAnnuel      Int      @default(0)    // En centimes
+  maxEmployes     Int      @default(5)
+  maxUtilisateurs Int      @default(2)
+  maxClients      Int      @default(50)
+  maxProduits     Int      @default(100)
+  maxFacturesMois Int      @default(50)
+  modules         String   @default("facturation,clients,produits") // JSON array of enabled modules
+  support         String   @default("email") // email, chat, phone, dedicated
+  sauvegardeAuto  Boolean  @default(true)
+  apiAccess       Boolean  @default(false)
+  personnalisation Boolean @default(false)
+  multiSociete    Boolean  @default(false)
+  rapportsAvances Boolean  @default(false)
+  actif           Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  companies       Company[]
+}
+
+// ============================================================================
+// SOCIÉTÉ / ENTREPRISE
+// ============================================================================
+
+model Company {
+  id                    String   @id @default(cuid())
+  nom                   String
+  email                 String?
+  telephone             String?
+  adresse               String?
+  ville                 String?
+  pays                  String   @default("Guinée")
+  codePays              String   @default("GN")
+  ninea                 String?  // Numéro d'identification nationale
+  logo                  String?
+  devise                String   @default("GNF")
+  symboleDevise         String   @default("GNF")
+  
+  // Plan et abonnement
+  planId                String?  @default("free")
+  planAbonnement        PlanAbonnement? @relation(fields: [planId], references: [id])
+  dateDebutAbonnement   DateTime?
+  dateFinAbonnement     DateTime?
+  
+  // Configuration fiscale par pays (peut être personnalisée)
+  configTauxCNSSEmploye Float?   // Taux CNSS employé personnalisé
+  configTauxCNSSEmployeur Float? // Taux CNSS employeur personnalisé
+  configPlafondCNSS     Int?     // Plafond CNSS personnalisé en centimes
+  configTauxTVA         Float?   @default(0.18)
+  
+  // Préférences
+  langue                String   @default("fr")
+  fuseauHoraire         String   @default("Africa/Conakry")
+  formatDateTime        String   @default("DD/MM/YYYY")
+  
+  // Notifications
+  notificationEmail     Boolean  @default(true)
+  notificationSMS       Boolean  @default(false)
+  
+  // Statut
+  actif                 Boolean  @default(true)
+  dateEssaiFin          DateTime?
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  users                 User[]
+  clients               Client[]
+  produits              Produit[]
+  factures              Facture[]
+  employes              Employe[]
+  bulletins             BulletinPaie[]
+  depenses              Depense[]
+  parametres            ParametreSociete[]
+  historiqueAbonnements HistoriqueAbonnement[]
+
+  @@index([pays])
+  @@index([planId])
+}
+
+// ============================================================================
+// PARAMÈTRES SOCIÉTÉ
+// ============================================================================
+
+model ParametreSociete {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  // Clé et valeur du paramètre
+  cle         String   // ex: "taux_horaire_defaut", "jours_conge_annuel"
+  valeur      String   // Valeur en string (convertir selon le type)
+  type        String   @default("string") // string, number, boolean, json
+  
+  description String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([companyId, cle])
+  @@index([companyId])
+}
+
+// ============================================================================
+// HISTORIQUE ABONNEMENTS
+// ============================================================================
+
+model HistoriqueAbonnement {
+  id              String   @id @default(cuid())
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id])
+  
+  planId          String
+  planNom         String
+  dateDebut       DateTime
+  dateFin         DateTime?
+  prix            Int      // En centimes
+  modePaiement    String?  // ORANGE_MONEY, MTN_MONEY, VIREMENT, CARTE
+  referencePaiement String?
+  statut          String   @default("ACTIF") // ACTIF, EXPIRE, ANNULE, SUSPENDU
+  
+  createdAt       DateTime @default(now())
 
   @@index([companyId])
 }
 
-model Company {
-  id        String   @id @default(cuid())
-  nom       String
-  email     String?
-  telephone String?
-  adresse   String?
-  ville     String?
-  pays      String   @default("Guinée")
-  ninea     String?
-  logo      String?
-  plan      String   @default("FREE")  // FREE, STANDARD, ENTERPRISE
-  devise    String   @default("GNF")
-  users     User[]
-  clients   Client[]
-  produits  Produit[]
-  factures  Facture[]
-  employes  Employe[]
-  bulletins BulletinPaie[]
-  depenses  Depense[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// ============================================================================
+// UTILISATEUR
+// ============================================================================
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  nom           String
+  prenom        String
+  telephone     String?
+  avatar        String?
+  role          String   @default("COMPTABLE")  // ADMIN, MANAGER, COMPTABLE, EMPLOYE, RH
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id])
+  actif         Boolean  @default(true)
+  emailVerifie  Boolean  @default(false)
+  dernierLogin  DateTime?
+  preferences   String?  // JSON pour les préférences utilisateur
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([email])
 }
+
+// ============================================================================
+// CLIENT
+// ============================================================================
 
 model Client {
   id           String   @id @default(cuid())
@@ -56,7 +182,9 @@ model Client {
   ville        String?
   pays         String   @default("Guinée")
   type         String   @default("PARTICULIER") // PARTICULIER, ENTREPRISE
+  ninea        String?  // Pour les entreprises
   totalAchats  Int      @default(0)
+  notes        String?
   companyId    String
   company      Company  @relation(fields: [companyId], references: [id])
   factures     Facture[]
@@ -64,18 +192,27 @@ model Client {
   updatedAt    DateTime @updatedAt
 
   @@index([companyId])
+  @@index([email])
 }
+
+// ============================================================================
+// PRODUIT / SERVICE
+// ============================================================================
 
 model Produit {
   id            String   @id @default(cuid())
   nom           String
   description   String?
+  reference     String?  // Code produit/SKU
   prixUnitaire  Int
   unite         String   @default("Unité")
   stockActuel   Int      @default(0)
   stockMin      Int      @default(0)
+  stockMax      Int?
   categorie     String?
+  tva           Float?   @default(0.18)
   actif         Boolean  @default(true)
+  type          String   @default("PRODUIT") // PRODUIT, SERVICE
   companyId     String
   company       Company  @relation(fields: [companyId], references: [id])
   lignesFacture LigneFacture[]
@@ -83,7 +220,12 @@ model Produit {
   updatedAt     DateTime @updatedAt
 
   @@index([companyId])
+  @@index([categorie])
 }
+
+// ============================================================================
+// FACTURE
+// ============================================================================
 
 model Facture {
   id            String   @id @default(cuid())
@@ -96,8 +238,9 @@ model Facture {
   montantTVA    Int
   montantTTC    Int
   statut        String   @default("BROUILLON") // BROUILLON, ENVOYEE, PAYEE, EN_RETARD, ANNULEE
-  modePaiement  String?  // ESPECES, VIREMENT, ORANGE_MONEY, MTN_MONEY, CHEQUE
+  modePaiement  String?  // ESPECES, VIREMENT, ORANGE_MONEY, MTN_MONEY, CHEQUE, CARTE
   notes         String?
+  conditions    String?  // Conditions de paiement
   companyId     String
   company       Company  @relation(fields: [companyId], references: [id])
   lignes        LigneFacture[]
@@ -107,6 +250,8 @@ model Facture {
 
   @@unique([numero, companyId])
   @@index([companyId])
+  @@index([statut])
+  @@index([dateEmission])
 }
 
 model LigneFacture {
@@ -118,12 +263,13 @@ model LigneFacture {
   description   String
   quantite      Int
   prixUnitaire  Int
-  tauxTVA       Int      @default(18)
+  tauxTVA       Float    @default(0.18)
   montantHT     Int
   montantTVA    Int
   montantTTC    Int
 
   @@index([factureId])
+  @@index([produitId])
 }
 
 model Paiement {
@@ -140,95 +286,269 @@ model Paiement {
   @@index([factureId])
 }
 
+// ============================================================================
+// EMPLOYÉ
+// ============================================================================
+
 model Employe {
-  id            String   @id @default(cuid())
-  matricule     String
-  nom           String
-  prenom        String
-  email         String?
-  telephone     String?
-  adresse       String?
-  dateNaissance DateTime?
-  dateEmbauche  DateTime
-  dateDepart    DateTime?
-  poste         String
-  departement   String?
-  salaireBase   Int
-  typeContrat   String   @default("CDI") // CDI, CDD, APPRENTISSAGE, STAGE
-  actif         Boolean  @default(true)
-  companyId     String
-  company       Company  @relation(fields: [companyId], references: [id])
-  bulletins     BulletinPaie[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                String   @id @default(cuid())
+  matricule         String
+  nom               String
+  prenom            String
+  email             String?
+  telephone         String?
+  adresse           String?
+  dateNaissance     DateTime?
+  lieuNaissance     String?
+  nationalite       String?
+  situationMatrimoniale String? // CELIBATAIRE, MARIE, DIVORCE, VEUF
+  nombreEnfants     Int      @default(0)
+  dateEmbauche      DateTime
+  dateDepart        DateTime?
+  motifDepart       String?
+  poste             String
+  departement       String?
+  salaireBase       Int
+  typeContrat       String   @default("CDI") // CDI, CDD, APPRENTISSAGE, STAGE
+  dureeContratMois  Int?     // Pour CDD
+  actif             Boolean  @default(true)
+  photo             String?
+  numeroCNSS        String?
+  nombrePartsFiscales Int    @default(1)
+  companyId         String
+  company           Company  @relation(fields: [companyId], references: [id])
+  bulletins         BulletinPaie[]
+  conges            Conge[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@unique([matricule, companyId])
   @@index([companyId])
+  @@index([departement])
 }
 
+// ============================================================================
+// CONGÉS
+// ============================================================================
+
+model Conge {
+  id              String   @id @default(cuid())
+  employeId       String
+  employe         Employe  @relation(fields: [employeId], references: [id])
+  type            String   // ANNUEL, MALADIE, MATERNITE, PATERNITE, SANS_SOLDE, EXCEPTIONNEL
+  dateDebut       DateTime
+  dateFin         DateTime
+  nombreJours     Int
+  motif           String?
+  statut          String   @default("EN_ATTENTE") // EN_ATTENTE, APPROUVE, REFUSE, ANNULE
+  approuvePar     String?
+  dateApprobation DateTime?
+  commentaire     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([employeId])
+  @@index([statut])
+}
+
+// ============================================================================
+// BULLETIN DE PAIE
+// ============================================================================
+
 model BulletinPaie {
-  id                  String   @id @default(cuid())
-  employeId           String
-  employe             Employe  @relation(fields: [employeId], references: [id])
-  mois                Int
-  annee               Int
-  salaireBase         Int
-  heuresSupplementaires Int    @default(0)
-  montantHeuresSupp   Int      @default(0)
-  primes              Int      @default(0)
-  indemnites          Int      @default(0)
-  autresAvantages     Int      @default(0)
-  brutTotal           Int
-  cnssEmploye         Int
-  cnssEmployeur       Int
-  ipr                 Int
-  autresRetenues      Int      @default(0)
-  acomptes            Int      @default(0)
-  netAPayer           Int
-  coutTotalEmployeur  Int
-  statut              String   @default("BROUILLON") // BROUILLON, VALIDE, PAYE
-  datePaiement        DateTime?
-  companyId           String
-  company             Company  @relation(fields: [companyId], references: [id])
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  employeId             String
+  employe               Employe  @relation(fields: [employeId], references: [id])
+  mois                  Int
+  annee                 Int
+  periodePaiement       String?  // Format: "Janvier 2024"
+  
+  // Gains
+  salaireBase           Int
+  heuresSupplementaires Int      @default(0)
+  tauxHoraireSupp       Int      @default(0)
+  montantHeuresSupp     Int      @default(0)
+  primes                Int      @default(0)
+  primesDetail          String?  // JSON avec détail des primes
+  indemnites            Int      @default(0)
+  indemnitesDetail      String?  // JSON avec détail des indemnités
+  autresAvantages       Int      @default(0)
+  brutTotal             Int
+  
+  // Retenues
+  baseCNSS              Int
+  cnssEmploye           Int
+  cnssEmployeur         Int
+  baseImposable         Int
+  ipr                   Int
+  autresRetenues        Int      @default(0)
+  acomptes              Int      @default(0)
+  totalRetenues         Int
+  
+  // Résultat
+  netAPayer             Int
+  netImposable          Int
+  coutTotalEmployeur    Int
+  
+  // Taxes additionnelles (pour certains pays)
+  taxesAdditionnelles   String?  // JSON array
+  
+  // Statut
+  statut                String   @default("BROUILLON") // BROUILLON, VALIDE, PAYE
+  datePaiement          DateTime?
+  modePaiement          String?
+  referencePaiement     String?
+  
+  companyId             String
+  company               Company  @relation(fields: [companyId], references: [id])
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   @@unique([employeId, mois, annee])
   @@index([companyId])
+  @@index([statut])
 }
+
+// ============================================================================
+// DÉPENSE
+// ============================================================================
 
 model Depense {
   id            String   @id @default(cuid())
   description   String
   montant       Int
   categorie     String
+  sousCategorie String?
   date          DateTime @default(now())
   modePaiement  String   // ESPECES, VIREMENT, ORANGE_MONEY, MTN_MONEY, CHEQUE, CARTE
+  beneficiaire  String?
   notes         String?
   recuUrl       String?
+  valide        Boolean  @default(false)
+  validePar     String?
   companyId     String
   company       Company  @relation(fields: [companyId], references: [id])
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@index([companyId])
+  @@index([categorie])
+  @@index([date])
 }
+
+// ============================================================================
+// CATÉGORIE DÉPENSE
+// ============================================================================
+
+model CategorieDepense {
+  id          String   @id @default(cuid())
+  nom         String
+  description String?
+  couleur     String?  // Code couleur hex
+  icone       String?  // Nom de l'icône
+  companyId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([nom, companyId])
+  @@index([companyId])
+}
+
+// ============================================================================
+// JOURNAL DES OPÉRATIONS (AUDIT)
+// ============================================================================
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String   // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, etc.
+  table     String   // Table affectée
+  recordId  String?  // ID de l'enregistrement
+  userId    String?
+  companyId String?
+  details   String?  // JSON avec les détails de l'action
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([companyId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// NOTIFICATIONS
+// ============================================================================
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  titre       String
+  message     String
+  type        String   // INFO, WARNING, SUCCESS, ERROR
+  lu          Boolean  @default(false)
+  actionUrl   String?  // URL vers l'action concernée
+  actionType  String?  // FACTURE, PAIE, STOCK, etc.
+  actionId    String?  // ID de l'élément concerné
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([lu])
+}
+
+// ============================================================================
+// SMS LOG
+// ============================================================================
 
 model SmsLog {
   id        String   @id @default(cuid())
   telephone String
   message   String
-  statut    String
+  statut    String   // ENVOYE, ECHEC, EN_ATTENTE
   erreur    String?
+  cout      Int      @default(0)  // En centimes
   createdAt DateTime @default(now())
+
+  @@index([telephone])
+  @@index([createdAt])
 }
 
-model AuditLog {
-  id        String   @id @default(cuid())
-  action    String
-  table     String
-  recordId  String
-  userId    String?
-  details   String?
-  createdAt DateTime @default(now())
+// ============================================================================
+// EMAIL LOG
+// ============================================================================
+
+model EmailLog {
+  id          String   @id @default(cuid())
+  destinataire String
+  sujet      String
+  contenu    String?
+  statut     String   // ENVOYE, ECHEC, EN_ATTENTE
+  erreur     String?
+  templateId String?
+  createdAt  DateTime @default(now())
+
+  @@index([destinataire])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// TÂCHES PLANIFIÉES
+// ============================================================================
+
+model TachePlanifiee {
+  id            String   @id @default(cuid())
+  nom           String
+  description   String?
+  type          String   // RAPPEL_FACTURE, RAPPORT_MENSUEL, SAUVEGARDE, etc.
+  cronExpression String?
+  prochaineExec DateTime?
+  derniereExec  DateTime?
+  actif         Boolean  @default(true)
+  configuration String?  // JSON
+  derniereErreur String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([type])
+  @@index([prochaineExec])
 }

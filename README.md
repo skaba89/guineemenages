@@ -1,210 +1,258 @@
-# GuinéaManager - ERP pour PME Guinéennes
+# 🌍 GuinéaManager ERP
 
-![Version](https://img.shields.io/badge/version-1.0.0-green)
-![License](https://img.shields.io/badge/license-MIT-blue)
-![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
-![TypeScript](https://img.shields.io/badge/typescript-5.x-blue)
+**ERP SaaS multi-pays pour les PME d'Afrique de l'Ouest**
 
-## 📋 Description
-
-**GuinéaManager** est un ERP (Enterprise Resource Planning) moderne et complet, spécialement conçu pour les PME guinéennes. Il intègre les particularités fiscales et sociales de la Guinée, notamment les calculs de CNSS et d'IPR conformes à la législation locale.
-
-### 🇬🇳 Spécificités Guinéennes
-
-- **CNSS Employé** : 5% (plafonné à 5 000 000 GNF)
-- **CNSS Employeur** : 18% (plafonné à 5 000 000 GNF)
-- **IPR (Impôt sur le Revenu)** : Barème progressif guinéen
-  - 0 - 3 000 000 GNF : 0%
-  - 3 000 001 - 5 000 000 GNF : 10%
-  - 5 000 001 - 10 000 000 GNF : 15%
-  - Plus de 10 000 000 GNF : 20%
-- **Devise** : Franc Guinéen (GNF)
-- **Mobile Money** : Orange Money, MTN Money
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/skaba89/guineemenages)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
 
 ---
 
-## ✨ Fonctionnalités
+## 📋 Vue d'ensemble
 
-### 📊 Modules Principaux
+**GuinéaManager** est un ERP (Enterprise Resource Planning) SaaS complet, conçu spécifiquement pour les petites, moyennes et grandes entreprises d'Afrique de l'Ouest. Il prend en charge les particularités fiscales et sociales de chaque pays de la sous-région.
 
-| Module | Description | Statut |
-|--------|-------------|--------|
-| 🔐 **Authentification** | Inscription, connexion, rôles | ✅ Complet |
-| 👥 **Clients** | Gestion des clients (particuliers/entreprises) | ✅ Complet |
-| 📦 **Produits** | Catalogue et gestion des stocks | ✅ Complet |
-| 📄 **Factures** | Facturation avec génération PDF | ✅ Complet |
-| 👨‍💼 **Employés** | Gestion du personnel | ✅ Complet |
-| 💰 **Paie** | Bulletins de paie avec calculs CNSS/IPR | ✅ Complet |
-| 💸 **Dépenses** | Suivi des dépenses | ✅ Complet |
-| 📈 **Dashboard** | Tableau de bord et statistiques | ✅ Complet |
-| 📑 **Rapports** | Analyses et exports | ⚠️ Partiel |
+### 🎯 Objectifs
 
-### 🎯 Fonctionnalités Clés
-
-- ✅ **Multi-entreprises** : Chaque compte crée son espace entreprise
-- ✅ **Rôles utilisateur** : Admin, Manager, Comptable, Employé
-- ✅ **Factures PDF** : Génération automatique de factures professionnelles
-- ✅ **Calculs automatiques** : TVA 18%, CNSS, IPR
-- ✅ **Alertes** : Stock bas, factures en retard
-- ✅ **Recherche** : Filtres et recherche sur tous les modules
+- **Simplicité**: Interface intuitive, adaptée aux réalités locales
+- **Conformité**: Calculs fiscaux conformes à la législation de chaque pays
+- **Évolutivité**: De la petite startup à la grande entreprise
+- **Accessibilité**: Prix adaptés au marché africain
 
 ---
 
-## 🚀 Installation
+## 🌍 Pays Supportés
+
+| Pays | Code | Devise | Organisme Social | Impôt sur le Revenu |
+|------|------|--------|------------------|---------------------|
+| 🇬🇳 Guinée | GN | GNF | CNSS (5%/18%) | IPR (0-20%) |
+| 🇸🇳 Sénégal | SN | XOF | CSS/IPRES (5.6%/20.9%) | IR (0-40%) |
+| 🇲🇱 Mali | ML | XOF | INPS (4%/17.6%) | IR (0-40%) |
+| 🇨🇮 Côte d'Ivoire | CI | XOF | CNPS (6.3%/11.7%) | IR (0-40%) |
+| 🇧🇫 Burkina Faso | BF | XOF | CNSS (5.5%/16.4%) | IR (0-40%) |
+| 🇧🇯 Bénin | BJ | XOF | CNSS (3.6%/13.4%) | IR (0-35%) |
+| 🇳🇪 Niger | NE | XOF | CNSS (4%/16.4%) | IR (0-40%) |
+
+---
+
+## 🚀 Fonctionnalités
+
+### 📊 Tableau de Bord
+- Vue d'ensemble en temps réel
+- Indicateurs clés de performance (KPIs)
+- Alertes automatiques (stocks bas, factures en retard)
+- Graphiques interactifs
+
+### 👥 Gestion des Clients
+- Base de données clients complète
+- Historique des achats
+- Segmentation (Particulier/Entreprise)
+- Export Excel
+
+### 📦 Gestion des Produits
+- Catalogue produits/services
+- Gestion des stocks
+- Alertes de réapprovisionnement
+- Catégorisation
+
+### 📄 Facturation
+- Création de factures professionnelles
+- Génération automatique PDF
+- Suivi des paiements
+- Multi-modes de paiement (Mobile Money inclus)
+- Numérotation automatique
+
+### 👔 Gestion des Employés
+- Fiche employé complète
+- Contrats (CDI, CDD, Stage, Apprentissage)
+- Gestion des congés
+- Historique de carrière
+
+### 💰 Gestion de la Paie
+- **Calcul automatique** selon le pays
+- Cotisations sociales (CNSS/CSS/IPRES/CNPS/INPS)
+- Impôts sur le revenu (IPR/IR) avec barème progressif
+- Heures supplémentaires
+- Primes et indemnités
+- Bulletins de paie détaillés
+- Rapports de cotisations
+- Rapports fiscaux annuels
+
+### 💸 Gestion des Dépenses
+- Catégorisation des dépenses
+- Suivi des paiements
+- Justificatifs
+- Rapports par catégorie
+
+### 📈 Rapports & Analyses
+- États financiers
+- Graphiques de tendances
+- Export Excel
+- Rapports fiscaux (CNSS, IPR/IR)
+- Analyse de rentabilité
+
+### ⚙️ Paramètres
+- Configuration société
+- Paramètres fiscaux par pays
+- Gestion des utilisateurs
+- Préférences de notification
+
+---
+
+## 💳 Plans d'Abonnement
+
+| Plan | Prix | Employés | Utilisateurs | Fonctionnalités |
+|------|------|----------|--------------|-----------------|
+| **PETITE** | Gratuit | 5 | 2 | Facturation, Clients, Produits |
+| **MOYENNE** | 50 000 GNF/mois | 25 | 5 | Tout + Paie, Dépenses, Rapports |
+| **GRANDE** | 150 000 GNF/mois | 100 | 15 | Tout + Multi-société, API |
+| **ENTERPRISE** | Sur mesure | Illimité | Illimité | Tout + Support dédié |
+
+---
+
+## 🛠️ Stack Technique
+
+### Frontend
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS 4
+- **UI Components**: shadcn/ui
+- **Charts**: Recharts
+- **State**: Zustand
+
+### Backend
+- **Framework**: Express.js
+- **ORM**: Prisma
+- **Database**: SQLite (dev) / PostgreSQL (prod)
+- **Auth**: JWT
+- **PDF**: pdfkit
+- **Excel**: exceljs
+
+---
+
+## 📦 Installation
 
 ### Prérequis
-
 - Node.js >= 18
-- npm ou yarn ou bun
+- npm ou yarn
 - Git
 
-### 1. Cloner le projet
+### Démarrage Rapide
 
 ```bash
+# Cloner le repository
 git clone https://github.com/skaba89/guineemenages.git
 cd guineemenages
-```
 
-### 2. Installer le Frontend
-
-```bash
-# Installer les dépendances
+# Installation des dépendances
 npm install
 
-# Copier les variables d'environnement
-cp .env.example .env.local
-```
+# Configuration de l'environnement
+cp .env.example .env
 
-### 3. Installer le Backend
-
-```bash
-# Aller dans le dossier backend
+# Initialisation de la base de données
 cd backend
-
-# Installer les dépendances
-npm install
-
-# Générer le client Prisma
 npx prisma generate
-
-# Initialiser la base de données
 npx prisma db push
+npx ts-node prisma/seed.ts
 
-# Retourner à la racine
+# Démarrage du backend (port 3001)
+npm run dev
+
+# Dans un autre terminal, démarrage du frontend (port 3000)
 cd ..
+npm run dev
 ```
 
-### 4. Configuration des variables d'environnement
-
-Créer un fichier `.env.local` à la racine :
+### Variables d'Environnement
 
 ```env
-# Frontend
-NEXT_PUBLIC_API_URL=http://localhost:3001/api
-
-# Backend (dans backend/.env)
+# Backend (.env)
 DATABASE_URL="file:./dev.db"
 JWT_SECRET="votre-secret-jwt-tres-securise"
-JWT_EXPIRES_IN="7d"
+PORT=3001
+
+# Frontend (.env.local)
+NEXT_PUBLIC_API_URL="http://localhost:3001/api"
 ```
-
-### 5. Lancer l'application
-
-```bash
-# Terminal 1 - Backend
-cd backend
-npm run dev
-
-# Terminal 2 - Frontend
-npm run dev
-```
-
-L'application sera accessible sur :
-- **Frontend** : http://localhost:3000
-- **Backend API** : http://localhost:3001
 
 ---
 
-## 🔧 Configuration
-
-### Structure des dossiers
-
-```
-guineemenages/
-├── src/                    # Frontend Next.js
-│   ├── app/               # Pages (App Router)
-│   ├── components/        # Composants React
-│   │   ├── layout/       # Sidebar, Header
-│   │   ├── pages/        # Pages métier
-│   │   └── ui/           # Composants shadcn/ui
-│   ├── lib/              # Utilitaires, API client
-│   ├── stores/           # État global (Zustand)
-│   └── types/            # Types TypeScript
-│
-├── backend/               # Backend Express
-│   ├── src/
-│   │   ├── routes/       # Routes API
-│   │   ├── services/     # Logique métier
-│   │   ├── middlewares/  # Auth, erreurs
-│   │   └── utils/        # Utilitaires
-│   ├── prisma/           # Schéma DB
-│   └── tests/            # Tests unitaires
-│
-└── download/             # Fichiers générés
-```
-
-### Base de données
-
-Le projet utilise **SQLite** en développement et **PostgreSQL** en production. Le schéma Prisma définit les modèles suivants :
-
-- `User` - Utilisateurs
-- `Company` - Entreprises
-- `Client` - Clients
-- `Produit` - Produits/Services
-- `Facture` + `LigneFacture` - Facturation
-- `Employe` - Employés
-- `BulletinPaie` - Bulletins de paie
-- `Depense` - Dépenses
-
----
-
-## 📖 API Documentation
+## 📚 API Documentation
 
 ### Authentification
 
 ```http
-POST /api/auth/register
 POST /api/auth/login
+POST /api/auth/register
 GET  /api/auth/me
+POST /api/auth/logout
 ```
 
-### Ressources
+### Clients
 
-| Endpoint | Méthodes | Description |
-|----------|----------|-------------|
-| `/api/clients` | GET, POST, PUT, DELETE | Gestion clients |
-| `/api/produits` | GET, POST, PUT, DELETE | Gestion produits |
-| `/api/factures` | GET, POST, PUT, DELETE | Gestion factures |
-| `/api/factures/:id/pdf` | GET | Télécharger PDF |
-| `/api/employes` | GET, POST, PUT, DELETE | Gestion employés |
-| `/api/paie/bulletins` | GET, POST | Bulletins de paie |
-| `/api/paie/calculer` | POST | Calculer paie |
-| `/api/depenses` | GET, POST, PUT, DELETE | Gestion dépenses |
-| `/api/dashboard/stats` | GET | Statistiques |
+```http
+GET    /api/clients
+GET    /api/clients/:id
+POST   /api/clients
+PUT    /api/clients/:id
+DELETE /api/clients/:id
+```
 
-### Exemple de requête
+### Produits
 
-```bash
-# Connexion
-curl -X POST http://localhost:3001/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email": "test@guineamanager.com", "password": "password123"}'
+```http
+GET    /api/produits
+GET    /api/produits/stock-bas
+GET    /api/produits/:id
+POST   /api/produits
+PUT    /api/produits/:id
+DELETE /api/produits/:id
+```
 
-# Créer un client (avec token)
-curl -X POST http://localhost:3001/api/clients \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"nom": "Client Test", "email": "client@test.com"}'
+### Factures
+
+```http
+GET    /api/factures
+GET    /api/factures/:id
+GET    /api/factures/:id/pdf
+POST   /api/factures
+PUT    /api/factures/:id/statut
+DELETE /api/factures/:id
+```
+
+### Paie Multi-Pays
+
+```http
+GET  /api/paie/config-pays          # Configuration fiscale du pays
+GET  /api/paie/pays-supportes       # Liste des pays supportés
+GET  /api/paie/bulletins            # Liste des bulletins
+POST /api/paie/calculer             # Calcul de paie (preview)
+POST /api/paie/bulletins            # Créer un bulletin
+PUT  /api/paie/bulletins/:id/valider
+PUT  /api/paie/bulletins/:id/payer
+GET  /api/paie/rapport-cotisations  # Rapport CNSS
+GET  /api/paie/rapport-imposition   # Rapport IPR/IR annuel
+```
+
+### Paramètres
+
+```http
+GET  /api/parametres/societe
+PUT  /api/parametres/societe
+PUT  /api/parametres/societe/fiscal
+GET  /api/parametres/pays
+GET  /api/parametres/profil
+PUT  /api/parametres/profil
+```
+
+### Plans
+
+```http
+GET /api/plans
+GET /api/plans/:id
+GET /api/plans/abonnement/actuel
+POST /api/plans/abonnement/changer
 ```
 
 ---
@@ -212,77 +260,61 @@ curl -X POST http://localhost:3001/api/clients \
 ## 🧪 Tests
 
 ```bash
-# Lancer les tests backend
+# Tests unitaires
 cd backend
-npm run test
+npm test
 
 # Tests avec couverture
 npm run test:coverage
 ```
 
-### Tests disponibles
-
-- **Payroll** : Calculs CNSS, IPR, net à payer (10 tests)
-- **Auth** : Inscription, connexion, JWT (8 tests)
-- **Clients** : CRUD, validation (10 tests)
-- **Factures** : Calculs TVA, création (10 tests)
-
 ---
 
-## 🛠️ Technologies
+## 📁 Structure du Projet
 
-### Frontend
-- **Next.js 16** - Framework React
-- **React 19** - UI Library
-- **TypeScript** - Typage statique
-- **Tailwind CSS 4** - Styling
-- **shadcn/ui** - Composants UI
-- **Zustand** - State management
-- **TanStack Query** - Data fetching
-- **Recharts** - Graphiques
-
-### Backend
-- **Express 4** - Framework Node.js
-- **Prisma** - ORM
-- **SQLite/PostgreSQL** - Base de données
-- **JWT** - Authentification
-- **Zod** - Validation
-- **pdfkit** - Génération PDF
-
----
-
-## 📱 Captures d'écran
-
-### Dashboard
-![Dashboard](docs/screenshots/dashboard.png)
-
-### Facture PDF
-![Invoice](docs/screenshots/invoice-pdf.png)
+```
+guineemenages/
+├── src/                    # Frontend Next.js
+│   ├── app/                # Pages et routes
+│   ├── components/         # Composants React
+│   │   ├── pages/          # Pages de l'application
+│   │   └── ui/             # Composants UI (shadcn)
+│   ├── lib/                # Utilitaires et API client
+│   └── stores/             # State management (Zustand)
+│
+├── backend/                # Backend Express
+│   ├── prisma/
+│   │   ├── schema.prisma   # Schéma de la base de données
+│   │   └── seed.ts         # Données initiales
+│   ├── src/
+│   │   ├── config/         # Configuration multi-pays
+│   │   ├── middlewares/    # Middlewares Express
+│   │   ├── routes/         # Routes API
+│   │   └── utils/          # Utilitaires (paie, PDF, Excel)
+│   └── tests/              # Tests unitaires
+│
+└── README.md
+```
 
 ---
 
 ## 🤝 Contribution
 
-Les contributions sont les bienvenues ! Veuillez :
+Les contributions sont les bienvenues! Voir [CONTRIBUTING.md](CONTRIBUTING.md) pour les guidelines.
+
+### Étapes pour contribuer
 
 1. Fork le projet
-2. Créer une branche (`git checkout -b feature/nouvelle-fonctionnalite`)
-3. Commit (`git commit -m 'Ajout nouvelle fonctionnalité'`)
-4. Push (`git push origin feature/nouvelle-fonctionnalite`)
+2. Créer une branche (`git checkout -b feature/ma-fonctionnalite`)
+3. Commit les changements (`git commit -m 'Ajout de ma fonctionnalité'`)
+4. Push sur la branche (`git push origin feature/ma-fonctionnalite`)
 5. Ouvrir une Pull Request
-
-### Standards de code
-
-- TypeScript strict
-- ESLint + Prettier
-- Tests unitaires pour les nouvelles fonctionnalités
-- Documentation JSDoc
 
 ---
 
-## 📄 Licence
+## 📜 Licence
 
-Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
+Ce projet est sous licence MIT. Voir [LICENSE](LICENSE) pour plus de détails.
 
 ---
 
@@ -292,29 +324,22 @@ Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de 
 
 ---
 
-## 🆘 Support
+## 🙏 Remerciements
 
-- **Documentation** : [docs.guineamanager.com](https://docs.guineamanager.com)
-- **Issues** : [GitHub Issues](https://github.com/skaba89/guineemenages/issues)
-- **Email** : support@guineamanager.com
+- Communauté open source africain
+- Contributeurs et testeurs
+- Partenaires locaux pour les informations fiscales
 
 ---
 
-## 🗓️ Feuille de route
+## 📞 Support
 
-### Version 1.1 (Q2 2025)
-- [ ] Export Excel
-- [ ] Envoi d'emails
-- [ ] Notifications push
-- [ ] Application mobile
+- **Email**: support@guineamanager.com
+- **Documentation**: docs.guineamanager.com
+- **Issues**: GitHub Issues
 
-### Version 1.2 (Q3 2025)
-- [ ] Multi-devises
-- [ ] API Orange Money
-- [ ] SMS OTP
-- [ ] Intégrations comptables
+---
 
-### Version 2.0 (Q4 2025)
-- [ ] Multi-sociétés
-- [ ] Tableau de bord avancé
-- [ ] IA pour prévisions
+<p align="center">
+  <strong>Fait avec ❤️ pour les entreprises africaines</strong>
+</p>

@@ -388,6 +388,122 @@ class ApiClient {
     });
     return response.blob();
   }
+
+  // ============ PARAMETRES ============
+  async getSociete() {
+    return this.request<any>('/parametres/societe');
+  }
+
+  async updateSociete(data: any) {
+    return this.request<any>('/parametres/societe', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateFiscalConfig(data: any) {
+    return this.request<any>('/parametres/societe/fiscal', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getCustomParams() {
+    return this.request<Record<string, any>>('/parametres/custom');
+  }
+
+  async setCustomParam(cle: string, valeur: any, type?: string, description?: string) {
+    return this.request<any>(`/parametres/custom/${cle}`, {
+      method: 'PUT',
+      body: JSON.stringify({ valeur, type, description }),
+    });
+  }
+
+  async deleteCustomParam(cle: string) {
+    return this.request(`/parametres/custom/${cle}`, { method: 'DELETE' });
+  }
+
+  async getPays() {
+    return this.request<any[]>('/parametres/pays');
+  }
+
+  async getPaysConfig(code: string) {
+    return this.request<any>(`/parametres/pays/${code}/config`);
+  }
+
+  async getUtilisateurs() {
+    return this.request<any[]>('/parametres/utilisateurs');
+  }
+
+  async updateUtilisateur(id: string, data: any) {
+    return this.request<any>(`/parametres/utilisateurs/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getProfil() {
+    return this.request<any>('/parametres/profil');
+  }
+
+  async updateProfil(data: any) {
+    return this.request<any>('/parametres/profil', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async changePassword(ancienPassword: string, nouveauPassword: string) {
+    return this.request<any>('/parametres/profil/password', {
+      method: 'PUT',
+      body: JSON.stringify({ ancienPassword, nouveauPassword }),
+    });
+  }
+
+  // ============ PLANS ============
+  async getPlans() {
+    return this.request<any[]>('/plans');
+  }
+
+  async getPlan(id: string) {
+    return this.request<any>(`/plans/${id}`);
+  }
+
+  async getAbonnementActuel() {
+    return this.request<any>('/plans/abonnement/actuel');
+  }
+
+  async changerPlan(planId: string, duree: 'mensuel' | 'annuel' = 'mensuel') {
+    return this.request<any>('/plans/abonnement/changer', {
+      method: 'POST',
+      body: JSON.stringify({ planId, duree }),
+    });
+  }
+
+  async getHistoriqueAbonnement() {
+    return this.request<any[]>('/plans/abonnement/historique');
+  }
+
+  async getPlansComparaison() {
+    return this.request<any>('/plans/comparaison/feature');
+  }
+
+  // ============ PAIE MULTI-PAYS ============
+  async getPaieConfigPays() {
+    return this.request<any>('/paie/config-pays');
+  }
+
+  async getPaysSupportes() {
+    return this.request<any[]>('/paie/pays-supportes');
+  }
+
+  async getRapportCotisations(mois: number, annee: number) {
+    return this.request<any>(`/paie/rapport-cotisations?mois=${mois}&annee=${annee}`);
+  }
+
+  async getRapportImposition(annee: number) {
+    return this.request<any>(`/paie/rapport-imposition?annee=${annee}`);
+  }
 }
 
 export const api = new ApiClient(API_BASE_URL);

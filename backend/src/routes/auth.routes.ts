@@ -18,7 +18,9 @@ const registerSchema = z.object({
   nom: z.string().min(1, 'Nom requis'),
   prenom: z.string().min(1, 'Prénom requis'),
   telephone: z.string().optional(),
-  companyName: z.string().min(1, 'Nom d\'entreprise requis')
+  companyName: z.string().min(1, 'Nom d\'entreprise requis'),
+  pays: z.string().optional(),
+  codePays: z.string().optional()
 });
 
 // POST /api/auth/login
@@ -38,13 +40,19 @@ router.post('/login', async (req: Request, res: Response) => {
       });
     }
 
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) {
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
       return res.status(401).json({
         success: false,
         message: 'Email ou mot de passe incorrect'
       });
     }
+
+    // Update last login
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { dernierLogin: new Date() }
+    });
 
     const token = generateToken({
       id: user.id,
@@ -57,7 +65,6 @@ router.post('/login', async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      message: 'Connexion réussie',
       data: {
         token,
         user: {
@@ -65,6 +72,7 @@ router.post('/login', async (req: Request, res: Response) => {
           email: user.email,
           nom: user.nom,
           prenom: user.prenom,
+          telephone: user.telephone,
           role: user.role,
           company: user.company
         }
@@ -86,54 +94,71 @@ router.post('/login', async (req: Request, res: Response) => {
 // POST /api/auth/register
 router.post('/register', async (req: Request, res: Response) => {
   try {
-    const data = registerSchema.parse(req.body);
+    const { email, password, nom, prenom, telephone, companyName, pays, codePays } = registerSchema.parse(req.body);
 
-    // Check if email exists
+    // Check if user exists
     const existingUser = await prisma.user.findUnique({
-      where: { email: data.email }
+      where: { email }
     });
 
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'Cet email est déjà utilisé'
+        message: 'Un compte existe déjà avec cet email'
       });
     }
 
-    // Create company and admin user in transaction
-    const hashedPassword = await bcrypt.hash(data.password, 10);
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Determine country config
+    const countryCode = codePays || 'GN';
+    const countryName = pays || 'Guinée';
+    const isXOF = ['SN', 'ML', 'CI', 'BF', 'BJ', 'NE'].includes(countryCode);
+
+    // Create company and user in a transaction
     const result = await prisma.$transaction(async (tx) => {
+      // Create company with default plan
       const company = await tx.company.create({
         data: {
-          nom: data.companyName,
-          email: data.email,
-          plan: 'FREE'
+          nom: companyName,
+          email: email,
+          telephone: telephone || null,
+          pays: countryName,
+          codePays: countryCode,
+          devise: isXOF ? 'XOF' : 'GNF',
+          symboleDevise: isXOF ? 'FCFA' : 'GNF',
+          planId: 'petite', // Default to free plan
+          dateDebutAbonnement: new Date(),
+          dateFinAbonnement: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year trial
         }
       });
 
+      // Create admin user
       const user = await tx.user.create({
         data: {
-          email: data.email,
+          email,
           password: hashedPassword,
-          nom: data.nom,
-          prenom: data.prenom,
-          telephone: data.telephone,
+          nom,
+          prenom,
+          telephone: telephone || null,
           role: 'ADMIN',
-          companyId: company.id
-        }
+          companyId: company.id,
+          emailVerifie: false
+        },
+        include: { company: true }
       });
 
-      return { company, user };
+      return user;
     });
 
     const token = generateToken({
-      id: result.user.id,
-      email: result.user.email,
-      nom: result.user.nom,
-      prenom: result.user.prenom,
-      role: result.user.role,
-      companyId: result.user.companyId
+      id: result.id,
+      email: result.email,
+      nom: result.nom,
+      prenom: result.prenom,
+      role: result.role,
+      companyId: result.companyId
     });
 
     res.status(201).json({
@@ -142,11 +167,12 @@ router.post('/register', async (req: Request, res: Response) => {
       data: {
         token,
         user: {
-          id: result.user.id,
-          email: result.user.email,
-          nom: result.user.nom,
-          prenom: result.user.prenom,
-          role: result.user.role,
+          id: result.id,
+          email: result.email,
+          nom: result.nom,
+          prenom: result.prenom,
+          telephone: result.telephone,
+          role: result.role,
           company: result.company
         }
       }
@@ -169,7 +195,11 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.id },
-      include: { company: true }
+      include: { 
+        company: {
+          include: { planAbonnement: true }
+        } 
+      }
     });
 
     if (!user) {

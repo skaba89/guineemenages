@@ -13,6 +13,8 @@ import paieRoutes from './routes/paie.routes';
 import depenseRoutes from './routes/depenses.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import exportRoutes from './routes/exports.routes';
+import parametresRoutes from './routes/parametres.routes';
+import plansRoutes from './routes/plans.routes';
 
 export const prisma = new PrismaClient();
 
@@ -39,6 +41,8 @@ app.use('/api/paie', paieRoutes);
 app.use('/api/depenses', depenseRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/exports', exportRoutes);
+app.use('/api/parametres', parametresRoutes);
+app.use('/api/plans', plansRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

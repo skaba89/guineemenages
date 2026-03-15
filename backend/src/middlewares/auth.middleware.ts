@@ -170,3 +170,38 @@ export const requireRole = (...roles: string[]) => {
     next();
   };
 };
+
+/**
+ * Middleware d'authentification optionnel.
+ * 
+ * Similaire à authMiddleware mais n'échoue pas si le token est absent.
+ * Utile pour les routes publiques qui peuvent avoir un comportement
+ * différent selon que l'utilisateur est authentifié ou non.
+ * 
+ * @function optionalAuth
+ * @param {Request} req - Requête Express
+ * @param {Response} res - Réponse Express
+ * @param {NextFunction} next - Fonction pour passer au middleware suivant
+ * 
+ * @example
+ * // Route publique avec enrichissement si authentifié
+ * router.get('/produits', optionalAuth, getProduitsHandler);
+ */
+export const optionalAuth = (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Pas de token, on continue sans utilisateur
+    return next();
+  }
+
+  const token = authHeader.split(' ')[1];
+  const user = verifyToken(token);
+
+  // Si le token est valide, on l'injecte, sinon on continue sans
+  if (user) {
+    req.user = user;
+  }
+
+  next();
+};

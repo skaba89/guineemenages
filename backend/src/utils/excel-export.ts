@@ -17,10 +17,10 @@ import ExcelJS from 'exceljs';
 
 interface ExportClient {
   nom: string;
-  email?: string;
-  telephone?: string;
-  adresse?: string;
-  ville?: string;
+  email: string | null;
+  telephone: string | null;
+  adresse: string | null;
+  ville: string | null;
   type: string;
   totalAchats: number;
   createdAt: Date;
@@ -41,10 +41,10 @@ interface ExportEmploye {
   matricule: string;
   nom: string;
   prenom: string;
-  email?: string;
-  telephone?: string;
+  email: string | null;
+  telephone: string | null;
   poste: string;
-  departement?: string;
+  departement: string | null;
   salaireBase: number;
   typeContrat: string;
   actif: boolean;
@@ -179,7 +179,8 @@ export async function exportClientsToExcel(clients: ExportClient[]): Promise<Buf
     });
   });
 
-  return workbook.xlsx.writeBuffer() as Promise<Buffer>;
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
 }
 
 /**
@@ -244,7 +245,8 @@ export async function exportFacturesToExcel(factures: ExportFacture[]): Promise<
     });
   });
 
-  return workbook.xlsx.writeBuffer() as Promise<Buffer>;
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
 }
 
 /**
@@ -313,7 +315,8 @@ export async function exportEmployesToExcel(employes: ExportEmploye[]): Promise<
     });
   });
 
-  return workbook.xlsx.writeBuffer() as Promise<Buffer>;
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
 }
 
 /**
@@ -384,7 +387,8 @@ export async function exportBulletinsPaieToExcel(bulletins: ExportBulletinPaie[]
     });
   });
 
-  return workbook.xlsx.writeBuffer() as Promise<Buffer>;
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
 }
 
 /**
@@ -470,5 +474,6 @@ export async function exportDepensesToExcel(depenses: ExportDepense[]): Promise<
     });
   });
 
-  return workbook.xlsx.writeBuffer() as Promise<Buffer>;
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
 }
