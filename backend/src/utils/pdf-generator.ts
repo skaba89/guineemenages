@@ -1,9 +1,49 @@
-// PDF Generator for GuinéaManager Invoices
-// Uses reportlab-style generation with pdfkit
+/**
+ * @fileoverview Générateur de PDF pour les factures GuinéaManager
+ * 
+ * Ce module génère des factures au format PDF professionnelles, conformes
+ * aux standards guinéens et adaptées aux PME locales.
+ * 
+ * @module pdf-generator
+ * @author GuinéaManager Team
+ * @version 1.0.0
+ * 
+ * @description
+ * Utilise la bibliothèque PDFKit pour générer des documents PDF de haute qualité.
+ * Les factures incluent :
+ * - En-tête avec logo et informations de l'entreprise
+ * - Détails du client
+ * - Tableau des lignes de facture
+ * - Récapitulatif des montants (HT, TVA, TTC)
+ * - Pied de page professionnel
+ * 
+ * @requires pdfkit
+ * 
+ * @example
+ * import { generateInvoicePDF } from './pdf-generator';
+ * 
+ * const pdfBuffer = await generateInvoicePDF(factureData);
+ * res.setHeader('Content-Type', 'application/pdf');
+ * res.send(pdfBuffer);
+ */
 
 import PDFDocument from 'pdfkit';
 import { PassThrough } from 'stream';
 
+// ============================================================================
+// INTERFACES TYPESCRIPT
+// ============================================================================
+
+/**
+ * @typedef {Object} LigneFacture
+ * @property {string} description - Description du produit ou service
+ * @property {number} quantite - Quantité facturée
+ * @property {number} prixUnitaire - Prix unitaire en centimes
+ * @property {number} tauxTVA - Taux de TVA en pourcentage (ex: 18)
+ * @property {number} montantHT - Montant hors taxes en centimes
+ * @property {number} montantTVA - Montant de la TVA en centimes
+ * @property {number} montantTTC - Montant toutes taxes comprises en centimes
+ */
 interface LigneFacture {
   description: string;
   quantite: number;
@@ -14,6 +54,59 @@ interface LigneFacture {
   montantTTC: number;
 }
 
+/**
+ * @typedef {Object} ClientInfo
+ * @property {string} nom - Nom du client (personne ou entreprise)
+ * @property {string} [email] - Adresse email du client
+ * @property {string} [telephone] - Numéro de téléphone
+ * @property {string} [adresse] - Adresse postale
+ * @property {string} [ville] - Ville
+ * @property {string} [pays] - Pays (défaut: Guinée)
+ */
+interface ClientInfo {
+  nom: string;
+  email?: string;
+  telephone?: string;
+  adresse?: string;
+  ville?: string;
+  pays?: string;
+}
+
+/**
+ * @typedef {Object} CompanyInfo
+ * @property {string} nom - Nom de l'entreprise émettrice
+ * @property {string} [email] - Email de contact
+ * @property {string} [telephone] - Numéro de téléphone
+ * @property {string} [adresse] - Adresse postale
+ * @property {string} [ville] - Ville
+ * @property {string} [pays] - Pays
+ * @property {string} [ninea] - Numéro d'identification nationale (NINEA)
+ */
+interface CompanyInfo {
+  nom: string;
+  email?: string;
+  telephone?: string;
+  adresse?: string;
+  ville?: string;
+  pays?: string;
+  ninea?: string;
+}
+
+/**
+ * @typedef {Object} FactureData
+ * @property {string} numero - Numéro unique de la facture (ex: FAC-2024-0001)
+ * @property {Date} dateEmission - Date d'émission de la facture
+ * @property {Date} dateEcheance - Date d'échéance du paiement
+ * @property {string} statut - Statut de la facture (BROUILLON, ENVOYEE, PAYEE, etc.)
+ * @property {string} [modePaiement] - Mode de paiement convenu
+ * @property {string} [notes] - Notes additionnelles
+ * @property {number} montantHT - Total hors taxes en centimes
+ * @property {number} montantTVA - Total TVA en centimes
+ * @property {number} montantTTC - Total TTC en centimes
+ * @property {ClientInfo} client - Informations du client
+ * @property {CompanyInfo} company - Informations de l'entreprise
+ * @property {LigneFacture[]} lignes - Lignes de facture
+ */
 interface FactureData {
   numero: string;
   dateEmission: Date;
@@ -24,27 +117,28 @@ interface FactureData {
   montantHT: number;
   montantTVA: number;
   montantTTC: number;
-  client: {
-    nom: string;
-    email?: string;
-    telephone?: string;
-    adresse?: string;
-    ville?: string;
-    pays?: string;
-  };
-  company: {
-    nom: string;
-    email?: string;
-    telephone?: string;
-    adresse?: string;
-    ville?: string;
-    pays?: string;
-    ninea?: string;
-  };
+  client: ClientInfo;
+  company: CompanyInfo;
   lignes: LigneFacture[];
 }
 
-// Format amount in GNF
+// ============================================================================
+// FONCTIONS UTILITAIRES
+// ============================================================================
+
+/**
+ * Formate un montant en centimes en chaîne GNF lisible.
+ * 
+ * Utilise le formatage locale français-guinée avec séparateur de milliers.
+ * 
+ * @function formatGNF
+ * @private
+ * @param {number} montant - Montant en centimes à formater
+ * @returns {string} Montant formaté (ex: "1 500 000 GNF")
+ * 
+ * @example
+ * formatGNF(1_500_000_00); // "1 500 000 GNF"
+ */
 function formatGNF(montant: number): string {
   return new Intl.NumberFormat('fr-GN', {
     style: 'decimal',
@@ -53,7 +147,17 @@ function formatGNF(montant: number): string {
   }).format(montant) + ' GNF';
 }
 
-// Format date
+/**
+ * Formate une date en format français (JJ/MM/AAAA).
+ * 
+ * @function formatDate
+ * @private
+ * @param {Date} date - Date à formater
+ * @returns {string} Date formatée (ex: "15/01/2024")
+ * 
+ * @example
+ * formatDate(new Date('2024-01-15')); // "15/01/2024"
+ */
 function formatDate(date: Date): string {
   return new Date(date).toLocaleDateString('fr-FR', {
     day: '2-digit',
@@ -62,10 +166,69 @@ function formatDate(date: Date): string {
   });
 }
 
+// ============================================================================
+// FONCTION PRINCIPALE
+// ============================================================================
+
+/**
+ * Génère un fichier PDF professionnel pour une facture.
+ * 
+ * Cette fonction crée un document PDF A4 complet avec :
+ * - Un en-tête professionnel avec les informations de l'entreprise
+ * - Un bloc client avec toutes les coordonnées
+ * - Un tableau des lignes de facture avec calculs détaillés
+ * - Un récapitulatif des montants (HT, TVA, TTC)
+ * - Un badge de statut coloré
+ * - Les informations de paiement
+ * - Un pied de page avec mention légale
+ * 
+ * @function generateInvoicePDF
+ * @async
+ * @param {FactureData} facture - Données complètes de la facture
+ * @returns {Promise<Buffer>} Buffer contenant le PDF généré
+ * @throws {Error} En cas d'erreur lors de la génération du PDF
+ * 
+ * @example
+ * // Génération basique
+ * const pdfBuffer = await generateInvoicePDF({
+ *   numero: 'FAC-2024-0001',
+ *   dateEmission: new Date(),
+ *   dateEcheance: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+ *   statut: 'ENVOYEE',
+ *   montantHT: 1_271_186_00,
+ *   montantTVA: 228_814_00,
+ *   montantTTC: 1_500_000_00,
+ *   client: { nom: 'Entreprise ABC' },
+ *   company: { nom: 'Ma Société SARL' },
+ *   lignes: [
+ *     {
+ *       description: 'Service de consultation',
+ *       quantite: 2,
+ *       prixUnitaire: 500_000_00,
+ *       tauxTVA: 18,
+ *       montantHT: 1_000_000_00,
+ *       montantTVA: 180_000_00,
+ *       montantTTC: 1_180_000_00
+ *     }
+ *   ]
+ * });
+ * 
+ * // Envoi en réponse HTTP
+ * res.setHeader('Content-Type', 'application/pdf');
+ * res.setHeader('Content-Disposition', 'attachment; filename="facture-FAC-2024-0001.pdf"');
+ * res.send(pdfBuffer);
+ * 
+ * @example
+ * // Sauvegarde dans un fichier
+ * import fs from 'fs/promises';
+ * 
+ * const pdfBuffer = await generateInvoicePDF(factureData);
+ * await fs.writeFile(`facture-${facture.numero}.pdf`, pdfBuffer);
+ */
 export async function generateInvoicePDF(facture: FactureData): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
-      // Create PDF document
+      // Création du document PDF au format A4
       const doc = new PDFDocument({
         size: 'A4',
         margin: 50,
@@ -77,17 +240,22 @@ export async function generateInvoicePDF(facture: FactureData): Promise<Buffer> 
         }
       });
 
+      // Collecte des chunks pour former le buffer final
       const chunks: Buffer[] = [];
       doc.on('data', (chunk: Buffer) => chunks.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      // Colors
-      const primaryColor = '#059669'; // emerald-600
-      const textColor = '#1f2937'; // gray-800
-      const lightGray = '#6b7280'; // gray-500
+      // ====================================================================
+      // COULEURS DU THÈME
+      // ====================================================================
+      const primaryColor = '#059669'; // emerald-600 (vert Guinée)
+      const textColor = '#1f2937';    // gray-800
+      const lightGray = '#6b7280';    // gray-500
 
-      // Header - Company info
+      // ====================================================================
+      // EN-TÊTE - INFORMATIONS ENTREPRISE
+      // ====================================================================
       doc.fillColor(primaryColor)
          .fontSize(20)
          .font('Helvetica-Bold')
@@ -118,7 +286,9 @@ export async function generateInvoicePDF(facture: FactureData): Promise<Buffer> 
         doc.text(`NINEA: ${facture.company.ninea}`, 50, y);
       }
 
-      // Invoice title (right side)
+      // ====================================================================
+      // TITRE FACTURE (côté droit)
+      // ====================================================================
       doc.fillColor(primaryColor)
          .fontSize(28)
          .font('Helvetica-Bold')
@@ -129,7 +299,7 @@ export async function generateInvoicePDF(facture: FactureData): Promise<Buffer> 
          .font('Helvetica-Bold')
          .text(facture.numero, 350, 85, { align: 'right' });
 
-      // Invoice details
+      // Dates d'émission et d'échéance
       doc.fontSize(9)
          .font('Helvetica')
          .fillColor(lightGray);
@@ -137,7 +307,9 @@ export async function generateInvoicePDF(facture: FactureData): Promise<Buffer> 
       doc.text(`Date d'émission: ${formatDate(facture.dateEmission)}`, 350, 105, { align: 'right' });
       doc.text(`Date d'échéance: ${formatDate(facture.dateEcheance)}`, 350, 118, { align: 'right' });
 
-      // Status badge
+      // ====================================================================
+      // BADGE DE STATUT
+      // ====================================================================
       const statusColors: Record<string, string> = {
         'BROUILLON': '#6b7280',
         'ENVOYEE': '#3b82f6',
@@ -162,7 +334,9 @@ export async function generateInvoicePDF(facture: FactureData): Promise<Buffer> 
          .font('Helvetica-Bold')
          .text(statusLabel, 440, 141, { width: 100, align: 'center' });
 
-      // Client info box
+      // ====================================================================
+      // BLOC CLIENT
+      // ====================================================================
       doc.fillColor('#f3f4f6')
          .rect(50, 170, 200, 90)
          .fill();
@@ -195,17 +369,18 @@ export async function generateInvoicePDF(facture: FactureData): Promise<Buffer> 
         doc.text(facture.client.email, 60, clientY);
       }
 
-      // Table header
+      // ====================================================================
+      // TABLEAU DES LIGNES
+      // ====================================================================
       const tableTop = 280;
       const colWidths = [220, 60, 90, 90];
       const tableLeft = 50;
 
-      // Header background
+      // En-tête du tableau
       doc.fillColor(primaryColor)
          .rect(tableLeft, tableTop, colWidths.reduce((a, b) => a + b, 0), 25)
          .fill();
 
-      // Header text
       doc.fillColor('#ffffff')
          .fontSize(9)
          .font('Helvetica-Bold');
@@ -219,7 +394,7 @@ export async function generateInvoicePDF(facture: FactureData): Promise<Buffer> 
       colX += colWidths[2];
       doc.text('Montant HT', colX, tableTop + 8, { width: colWidths[3], align: 'right' });
 
-      // Table rows
+      // Lignes du tableau
       let rowY = tableTop + 25;
       doc.font('Helvetica')
          .fontSize(9)
@@ -228,7 +403,7 @@ export async function generateInvoicePDF(facture: FactureData): Promise<Buffer> 
       for (let i = 0; i < facture.lignes.length; i++) {
         const ligne = facture.lignes[i];
         
-        // Alternating row background
+        // Fond alterné pour les lignes paires
         if (i % 2 === 1) {
           doc.fillColor('#f9fafb')
              .rect(tableLeft, rowY, colWidths.reduce((a, b) => a + b, 0), 22)
@@ -248,12 +423,14 @@ export async function generateInvoicePDF(facture: FactureData): Promise<Buffer> 
         rowY += 22;
       }
 
-      // Table border
+      // Bordure du tableau
       doc.strokeColor('#e5e7eb')
          .lineWidth(0.5)
          .rect(tableLeft, tableTop, colWidths.reduce((a, b) => a + b, 0), rowY - tableTop);
 
-      // Totals section
+      // ====================================================================
+      // RÉCAPITULATIF DES MONTANTS
+      // ====================================================================
       const totalsTop = rowY + 20;
       const totalsLeft = 350;
 
@@ -273,14 +450,16 @@ export async function generateInvoicePDF(facture: FactureData): Promise<Buffer> 
       doc.text('Total TTC:', totalsLeft, totalsTop + 40, { width: 100, align: 'left' });
       doc.text(formatGNF(facture.montantTTC), totalsLeft + 100, totalsTop + 40, { width: 100, align: 'right' });
 
-      // Draw line above total
+      // Ligne au-dessus du total
       doc.strokeColor(primaryColor)
          .lineWidth(1)
          .moveTo(totalsLeft, totalsTop + 36)
          .lineTo(totalsLeft + 200, totalsTop + 36)
          .stroke();
 
-      // Payment info
+      // ====================================================================
+      // INFORMATIONS DE PAIEMENT
+      // ====================================================================
       if (facture.modePaiement) {
         const paymentLabels: Record<string, string> = {
           'ESPECES': 'Espèces',
@@ -296,7 +475,9 @@ export async function generateInvoicePDF(facture: FactureData): Promise<Buffer> 
            .text(`Mode de paiement: ${paymentLabels[facture.modePaiement] || facture.modePaiement}`, 50, totalsTop + 80);
       }
 
-      // Notes
+      // ====================================================================
+      // NOTES
+      // ====================================================================
       if (facture.notes) {
         doc.fillColor(lightGray)
            .fontSize(8)
@@ -304,14 +485,16 @@ export async function generateInvoicePDF(facture: FactureData): Promise<Buffer> 
         doc.text(facture.notes, 50, totalsTop + 115, { width: 500 });
       }
 
-      // Footer
+      // ====================================================================
+      // PIED DE PAGE
+      // ====================================================================
       doc.fillColor(lightGray)
          .fontSize(8)
          .font('Helvetica')
          .text('Merci pour votre confiance !', 50, 750, { align: 'center' });
       doc.text(`Document généré par GuinéaManager ERP - ${new Date().toLocaleDateString('fr-FR')}`, 50, 762, { align: 'center' });
 
-      // Finalize PDF
+      // Finalisation du PDF
       doc.end();
     } catch (error) {
       reject(error);
