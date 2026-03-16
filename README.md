@@ -139,30 +139,98 @@
 
 ### Démarrage Rapide
 
+#### Sur Linux/macOS
+
 ```bash
 # Cloner le repository
 git clone https://github.com/skaba89/guineemenages.git
 cd guineemenages
 
-# Installation des dépendances
+# Installation des dépendances frontend
 npm install
 
-# Configuration de l'environnement
-cp .env.example .env
-
-# Initialisation de la base de données
+# Installation des dépendances backend et initialisation
 cd backend
+npm install
 npx prisma generate
 npx prisma db push
 npx ts-node prisma/seed.ts
 
 # Démarrage du backend (port 3001)
-npm run dev
+npx ts-node-dev --respawn --transpile-only src/index.ts
 
 # Dans un autre terminal, démarrage du frontend (port 3000)
 cd ..
 npm run dev
 ```
+
+#### Sur Windows (PowerShell)
+
+```powershell
+# Cloner le repository
+git clone https://github.com/skaba89/guineemenages.git
+cd guineemenages
+
+# Installation des dépendances frontend
+npm install
+
+# Installation des dépendances backend
+cd backend
+npm install
+
+# Initialisation de la base de données
+npx prisma generate
+npx prisma db push
+npx ts-node prisma/seed.ts
+
+# Démarrage du backend (port 3001)
+npx ts-node-dev --respawn --transpile-only src/index.ts
+
+# Dans un autre terminal PowerShell, démarrage du frontend
+cd ..
+npm run dev
+```
+
+### 🔑 Identifiants de Démonstration
+
+Une fois l'application démarrée, vous pouvez vous connecter avec :
+
+- **Email**: `demo@guineamanager.com`
+- **Mot de passe**: `demo123`
+
+### ❓ Résolution de Problèmes
+
+#### Erreur "Erreur de connexion au serveur"
+
+1. **Vérifiez que le backend est démarré** sur le port 3001 :
+   ```bash
+   curl http://localhost:3001/api/health
+   ```
+   La réponse doit être : `{"status":"OK","timestamp":"..."}`
+
+2. **Vérifiez que la base de données est initialisée** :
+   ```bash
+   cd backend
+   npx prisma db push
+   npx ts-node prisma/seed.ts
+   ```
+
+3. **Redémarrez les serveurs** :
+   - Arrêtez tous les processus Node.js (`Ctrl+C` ou fermez les terminaux)
+   - Redémarrez le backend d'abord, puis le frontend
+
+#### Erreur "ts-node-dev n'est pas reconnu" (Windows)
+
+Utilisez `npx` devant la commande :
+```powershell
+npx ts-node-dev --respawn --transpile-only src/index.ts
+```
+
+#### Erreur "Port 3000/3001 déjà utilisé"
+
+Trouvez et tuez le processus utilisant le port :
+- **Windows**: `netstat -ano | findstr :3000` puis `taskkill /PID <PID> /F`
+- **Linux/macOS**: `lsof -i :3000` puis `kill -9 <PID>`
 
 ### Variables d'Environnement
 
