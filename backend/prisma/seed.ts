@@ -125,7 +125,128 @@ async function main() {
   console.log('⚙️ Configuration des paramètres par défaut...');
   // Ces paramètres seront appliqués lors de la création d'une société
 
+  // =========================================================================
+  // UTILISATEUR DE DÉMONSTRATION
+  // =========================================================================
+  
+  console.log('👤 Création de l\'utilisateur de démonstration...');
+  const bcrypt = require('bcryptjs');
+  const hashedPassword = await bcrypt.hash('demo123', 10);
+  
+  // Créer une société de démo
+  const demoCompany = await prisma.company.upsert({
+    where: { id: 'demo-company-001' },
+    update: {},
+    create: {
+      id: 'demo-company-001',
+      nom: 'Entreprise Demo SARL',
+      email: 'demo@guineamanager.com',
+      telephone: '+224 624 00 00 00',
+      adresse: 'Conakry, Guinée',
+      ville: 'Conakry',
+      pays: 'Guinée',
+      codePays: 'GN',
+      devise: 'GNF',
+      symboleDevise: 'GNF',
+      planId: 'moyenne',
+      dateDebutAbonnement: new Date(),
+      dateFinAbonnement: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+    }
+  });
+  console.log('   ✓ Société demo créée');
+
+  // Créer l'utilisateur admin de démo
+  await prisma.user.upsert({
+    where: { email: 'demo@guineamanager.com' },
+    update: {},
+    create: {
+      id: 'demo-user-001',
+      email: 'demo@guineamanager.com',
+      password: hashedPassword,
+      nom: 'Demo',
+      prenom: 'Admin',
+      telephone: '+224 624 00 00 00',
+      role: 'ADMIN',
+      companyId: demoCompany.id,
+      emailVerifie: true
+    }
+  });
+  console.log('   ✓ Utilisateur demo créé (demo@guineamanager.com / demo123)');
+
+  // Ajouter quelques clients de démo
+  const demoClients = [
+    { nom: 'Amadou Diallo', email: 'amadou@email.com', telephone: '+224 620 01 01 01', ville: 'Conakry' },
+    { nom: 'Fatou Soumah', email: 'fatou@email.com', telephone: '+224 621 02 02 02', ville: 'Kankan' },
+    { nom: 'Mamadou Sylla', email: 'mamadou@email.com', telephone: '+224 622 03 03 03', ville: 'Nzérékoré' },
+    { nom: 'Aminata Touré', email: 'aminata@email.com', telephone: '+224 623 04 04 04', ville: 'Labé' },
+    { nom: 'Ibrahima Condé', email: 'ibrahima@email.com', telephone: '+224 624 05 05 05', ville: 'Kindia' }
+  ];
+
+  console.log('👥 Création des clients de démonstration...');
+  for (const client of demoClients) {
+    await prisma.client.create({
+      data: {
+        ...client,
+        type: 'PARTICULIER',
+        pays: 'Guinée',
+        companyId: demoCompany.id
+      }
+    });
+  }
+  console.log(`   ✓ ${demoClients.length} clients créés`);
+
+  // Ajouter quelques produits de démo
+  const demoProduits = [
+    { nom: 'Consultation', description: 'Service de consultation', prixUnitaire: 500000, unite: 'Heure', type: 'SERVICE' },
+    { nom: 'Formation', description: 'Formation professionnelle', prixUnitaire: 1500000, unite: 'Session', type: 'SERVICE' },
+    { nom: 'Fournitures de bureau', description: 'Fournitures diverses', prixUnitaire: 150000, unite: 'Lot', type: 'PRODUIT' },
+    { nom: 'Maintenance informatique', description: 'Service de maintenance', prixUnitaire: 300000, unite: 'Intervention', type: 'SERVICE' },
+    { nom: 'Développement web', description: 'Service de développement', prixUnitaire: 5000000, unite: 'Projet', type: 'SERVICE' }
+  ];
+
+  console.log('📦 Création des produits de démonstration...');
+  for (const produit of demoProduits) {
+    await prisma.produit.create({
+      data: {
+        ...produit,
+        stockActuel: produit.type === 'PRODUIT' ? 100 : 0,
+        companyId: demoCompany.id
+      }
+    });
+  }
+  console.log(`   ✓ ${demoProduits.length} produits créés`);
+
+  // Ajouter quelques employés de démo
+  const demoEmployes = [
+    { matricule: 'EMP001', nom: 'Diallo', prenom: 'Moussa', poste: 'Comptable', departement: 'Finance', salaireBase: 3000000 },
+    { matricule: 'EMP002', nom: 'Soumah', prenom: 'Aïssatou', poste: 'Secrétaire', departement: 'Administration', salaireBase: 2000000 },
+    { matricule: 'EMP003', nom: 'Sylla', prenom: 'Alpha', poste: 'Commercial', departement: 'Ventes', salaireBase: 2500000 },
+    { matricule: 'EMP004', nom: 'Touré', prenom: 'Mariama', poste: 'RH', departement: 'Ressources Humaines', salaireBase: 2800000 },
+    { matricule: 'EMP005', nom: 'Condé', prenom: 'Sékou', poste: 'Développeur', departement: 'IT', salaireBase: 4000000 }
+  ];
+
+  console.log('👷 Création des employés de démonstration...');
+  for (const employe of demoEmployes) {
+    await prisma.employe.create({
+      data: {
+        ...employe,
+        email: `${employe.prenom.toLowerCase()}.${employe.nom.toLowerCase()}@demo.com`,
+        dateEmbauche: new Date(2023, 0, 1),
+        typeContrat: 'CDI',
+        nombrePartsFiscales: 2,
+        companyId: demoCompany.id
+      }
+    });
+  }
+  console.log(`   ✓ ${demoEmployes.length} employés créés`);
+
   console.log('✅ Seeding terminé avec succès!');
+  console.log('');
+  console.log('════════════════════════════════════════════════════════════');
+  console.log('🔑 IDENTIFIANTS DE CONNEXION:');
+  console.log('   Email: demo@guineamanager.com');
+  console.log('   Mot de passe: demo123');
+  console.log('════════════════════════════════════════════════════════════');
 }
 
 main()
