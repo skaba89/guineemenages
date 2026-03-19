@@ -91,6 +91,9 @@ model Company {
   depenses              Depense[]
   parametres            ParametreSociete[]
   historiqueAbonnements HistoriqueAbonnement[]
+  devis                 Devis[]
+  paiementsAbonnement   PaiementAbonnement[]
+  tickets               SupportTicket[]
 
   @@index([pays])
   @@index([planId])
@@ -162,6 +165,29 @@ model User {
   dernierLogin  DateTime?
   preferences   String?  // JSON pour les préférences utilisateur
   
+  // Two-Factor Authentication
+  twoFactorEnabled      Boolean  @default(false)
+  twoFactorMethod       String?  // totp, sms
+  twoFactorSecret       String?  // TOTP secret (base64)
+  twoFactorOTP          String?  // Current SMS OTP
+  twoFactorOTPExpiry    DateTime? // OTP expiry time
+  twoFactorRecoveryCodes String? // JSON array of recovery codes
+  
+  // Password Reset
+  resetToken           String?
+  resetTokenExpiry     DateTime?
+  
+  // Email Verification
+  verificationToken      String?
+  verificationTokenExpiry DateTime?
+  
+  // Login Attempts (for security)
+  loginAttempts        Int      @default(0)
+  lockedUntil          DateTime?
+  
+  // Relations
+  assignedTickets    SupportTicket[] @relation("AssignedTickets")
+  
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -188,6 +214,7 @@ model Client {
   companyId    String
   company      Company  @relation(fields: [companyId], references: [id])
   factures     Facture[]
+  devis        Devis[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -216,6 +243,7 @@ model Produit {
   companyId     String
   company       Company  @relation(fields: [companyId], references: [id])
   lignesFacture LigneFacture[]
+  lignesDevis   LigneDevis[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -551,4 +579,160 @@ model TachePlanifiee {
 
   @@index([type])
   @@index([prochaineExec])
+}
+
+// ============================================================================
+// SUPPORT TICKETS
+// ============================================================================
+
+model SupportTicket {
+  id            String   @id @default(cuid())
+  sujet         String
+  description   String
+  priorite      String   @default("NORMALE") // BASSE, NORMALE, HAUTE, CRITIQUE
+  statut        String   @default("OUVERT")  // OUVERT, EN_COURS, EN_ATTENTE, RESOLU, FERME
+  categorie     String   @default("AUTRE")   // TECHNIQUE, FACTURATION, COMPTE, AUTRE
+  
+  userId        String   // Utilisateur ayant créé le ticket
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id])
+  
+  assigneeId    String?  // Agent support assigné
+  assignee      User?    @relation("AssignedTickets", fields: [assigneeId], references: [id])
+  
+  reponses      TicketReponse[]
+  piecesJointes String?  // JSON array des URLs des pièces jointtes
+  
+  satisfaction  Int?     // Note de satisfaction 1-5
+  commentaire   String?  // Commentaire de satisfaction
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  resoluAt      DateTime?
+  fermeAt       DateTime?
+
+  @@index([userId])
+  @@index([companyId])
+  @@index([statut])
+  @@index([priorite])
+}
+
+model TicketReponse {
+  id          String   @id @default(cuid())
+  ticketId    String
+  ticket      SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  auteurId    String   // ID de l'utilisateur ou agent
+  auteurType  String   // USER, AGENT, SYSTEM
+  message     String
+  piecesJointes String? // JSON array des URLs
+  
+  interne     Boolean  @default(false) // Note interne (non visible par le client)
+  
+  createdAt   DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+// ============================================================================
+// PAIEMENTS ABONNEMENTS
+// ============================================================================
+
+model PaiementAbonnement {
+  id              String   @id @default(cuid())
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id])
+  
+  montant         Int      // En centimes
+  devise          String   @default("GNF")
+  
+  methode         String   // ORANGE_MONEY, MTN_MONEY, CARTE, VIREMENT
+  reference       String?  // Référence de la transaction
+  numeroTelephone String?  // Pour Mobile Money
+  
+  statut          String   @default("EN_ATTENTE") // EN_ATTENTE, REUSSI, ECHEC, REMBOURSE
+  detailsReponse  String?  // JSON de la réponse du fournisseur de paiement
+  
+  planId          String
+  planNom         String
+  duree           String   // MENSUEL, ANNUEL
+  
+  factureUrl      String?  // URL de la facture de paiement
+  
+  createdAt       DateTime @default(now())
+  traiteAt        DateTime?
+
+  @@index([companyId])
+  @@index([statut])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// DEVIS
+// ============================================================================
+
+model Devis {
+  id            String   @id @default(cuid())
+  numero        String
+  clientId      String
+  client        Client   @relation(fields: [clientId], references: [id])
+  
+  dateEmission  DateTime @default(now())
+  dateValidite  DateTime // Date d'expiration du devis
+  
+  montantHT     Int
+  montantTVA    Int
+  montantTTC    Int
+  
+  statut        String   @default("BROUILLON") // BROUILLON, ENVOYE, ACCEPTE, REFUSE, EXPIRE
+  conditions    String?
+  notes         String?
+  
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id])
+  
+  lignes        LigneDevis[]
+  factureId     String?  // Si converti en facture
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([numero, companyId])
+  @@index([companyId])
+  @@index([statut])
+}
+
+model LigneDevis {
+  id            String   @id @default(cuid())
+  devisId       String
+  devis         Devis    @relation(fields: [devisId], references: [id], onDelete: Cascade)
+  produitId     String?
+  produit       Produit? @relation(fields: [produitId], references: [id])
+  
+  description   String
+  quantite      Int
+  prixUnitaire  Int
+  tauxTVA       Float    @default(0.18)
+  montantHT     Int
+  montantTVA    Int
+  montantTTC    Int
+
+  @@index([devisId])
+}
+
+// ============================================================================
+// NOTIFICATIONS PUSH
+// ============================================================================
+
+model PushSubscription {
+  id            String   @id @default(cuid())
+  userId        String
+  endpoint      String   @unique
+  p256dh        String   // Clé publique
+  auth          String   // Clé d'authentification
+  userAgent     String?
+  actif         Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
 }

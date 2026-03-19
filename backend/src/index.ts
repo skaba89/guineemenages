@@ -15,6 +15,10 @@ import dashboardRoutes from './routes/dashboard.routes';
 import exportRoutes from './routes/exports.routes';
 import parametresRoutes from './routes/parametres.routes';
 import plansRoutes from './routes/plans.routes';
+import supportRoutes from './routes/support.routes';
+import notificationsRoutes from './routes/notifications.routes';
+import paymentRoutes from './routes/payment.routes';
+import twoFactorRoutes from './routes/auth-2fa.routes';
 
 export const prisma = new PrismaClient();
 
@@ -33,6 +37,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/auth', twoFactorRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/produits', produitRoutes);
 app.use('/api/factures', factureRoutes);
@@ -43,6 +48,9 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/exports', exportRoutes);
 app.use('/api/parametres', parametresRoutes);
 app.use('/api/plans', plansRoutes);
+app.use('/api/support', supportRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
