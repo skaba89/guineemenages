@@ -365,7 +365,7 @@ export class ComptabiliteService {
           debit: 0,
           credit: paiement.montant,
           tiersType: 'CLIENT',
-          tiersId: paiements.clientId,
+          tiersId: paiement.clientId,
           tiersNom: paiement.clientNom,
         },
       ];

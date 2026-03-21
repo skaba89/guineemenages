@@ -722,7 +722,7 @@ export default function CRMPage() {
                       <SelectItem value="HAUTE">Haute</SelectItem>
                     </SelectContent>
                   </Select>
-                </Select>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>

@@ -113,14 +113,17 @@ export default function Home() {
     }
   };
 
-  const config = pageConfig[currentPage] || pageConfig.dashboard;
-
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-slate-100 flex">
       <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
-      <div className="ml-64">
-        <Header title={config.title} subtitle={config.subtitle} />
-        <main className="p-6">
+      <div className="flex-1 flex flex-col min-h-screen">
+        <Header 
+          title="" 
+          subtitle="" 
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+        />
+        <main className="flex-1 p-4 lg:p-6 overflow-auto">
           {renderPage()}
         </main>
       </div>

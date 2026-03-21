@@ -220,6 +220,9 @@ export const requireRoles = (...roles: string[]) => {
   };
 };
 
+// Alias pour requireRoles (single role)
+export const requireRole = (role: string) => requireRoles(role);
+
 // Middleware pour propriétaire uniquement
 export const requireOwner = requireRoles('OWNER');
 

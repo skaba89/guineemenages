@@ -217,26 +217,26 @@ model User {
 // ============================================================================
 
 model Client {
-  id          String           @id @default(cuid())
-  nom         String
-  email       String?
-  telephone   String?
-  adresse     String?
-  ville       String?
-  pays        String           @default("Guinée")
-  type        String           @default("PARTICULIER") // PARTICULIER, ENTREPRISE
-  ninea       String? // Pour les entreprises
-  totalAchats Int              @default(0)
-  notes       String?
-  companyId   String
-  company     Company          @relation(fields: [companyId], references: [id])
-  factures    Facture[]
-  devis       Devis[]
-  commandes   CommandeClient[]
-  prospects   Prospect[]
+  id           String           @id @default(cuid())
+  nom          String
+  email        String?
+  telephone    String?
+  adresse      String?
+  ville        String?
+  pays         String           @default("Guinée")
+  type         String           @default("PARTICULIER") // PARTICULIER, ENTREPRISE
+  ninea        String? // Pour les entreprises
+  totalAchats  Int              @default(0)
+  notes        String?
+  companyId    String
+  company      Company          @relation(fields: [companyId], references: [id])
+  factures     Facture[]
+  devis        Devis[]
+  commandes    CommandeClient[]
+  prospects    Prospect[]
   opportunites Opportunite[]
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
   @@index([companyId])
   @@index([email])
@@ -1156,12 +1156,12 @@ model LigneBonLivraison {
 model PlanComptableOHADA {
   id          String   @id @default(cuid())
   numero      String   @unique // Numéro de compte (ex: 101, 401, 701)
-  intitule    String   // Intitulé du compte
-  classe      Int      // Classe (1-9)
-  sousClasse  String?  // Sous-classe
-  categorie   String?  // ACTIF, PASSIF, CHARGE, PRODUIT, RESULTAT
+  intitule    String // Intitulé du compte
+  classe      Int // Classe (1-9)
+  sousClasse  String? // Sous-classe
+  categorie   String? // ACTIF, PASSIF, CHARGE, PRODUIT, RESULTAT
   type        String   @default("COMPTE") // COMPTE, SOUS_COMPTE, TIERCE
-  parent      String?  // Numéro du compte parent
+  parent      String? // Numéro du compte parent
   actif       Boolean  @default(true)
   description String?
   createdAt   DateTime @default(now())
@@ -1173,19 +1173,26 @@ model PlanComptableOHADA {
 
 // Exercice Comptable
 model ExerciceComptable {
-  id              String    @id @default(cuid())
-  companyId       String
-  company         Company   @relation(fields: [companyId], references: [id])
-  annee           Int
-  dateDebut       DateTime
-  dateFin         DateTime
-  statut          String    @default("OUVERT") // OUVERT, CLOTURE, ARCHIVE
-  dateCloture     DateTime?
-  cluturePar      String?
-  resultatNet     Int       @default(0) // En centimes
-  notes           String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id          String    @id @default(cuid())
+  companyId   String
+  company     Company   @relation(fields: [companyId], references: [id])
+  annee       Int
+  dateDebut   DateTime
+  dateFin     DateTime
+  statut      String    @default("OUVERT") // OUVERT, CLOTURE, ARCHIVE
+  dateCloture DateTime?
+  cluturePar  String?
+  resultatNet Int       @default(0) // En centimes
+  notes       String?
+
+  // Relations inverses
+  ecritures            EcritureComptable[]
+  soldesComptes        SoldeCompte[]
+  lignesBilan          LigneBilan[]
+  lignesCompteResultat LigneCompteResultat[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([companyId, annee])
   @@index([companyId])
@@ -1194,17 +1201,17 @@ model ExerciceComptable {
 
 // Journal Comptable
 model JournalComptable {
-  id            String             @id @default(cuid())
-  companyId     String
-  company       Company            @relation(fields: [companyId], references: [id])
-  code          String             // Code journal (VT, AC, BK, OD, etc.)
-  nom           String             // Nom du journal
-  type          String             // ACHATS, VENTES, BANQUE, CAISSE, OD, GENERAL
-  compteContrepartie String?       // Compte de contrepartie par défaut
-  actif         Boolean            @default(true)
-  ecritures     EcritureComptable[]
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  id                 String              @id @default(cuid())
+  companyId          String
+  company            Company             @relation(fields: [companyId], references: [id])
+  code               String // Code journal (VT, AC, BK, OD, etc.)
+  nom                String // Nom du journal
+  type               String // ACHATS, VENTES, BANQUE, CAISSE, OD, GENERAL
+  compteContrepartie String? // Compte de contrepartie par défaut
+  actif              Boolean             @default(true)
+  ecritures          EcritureComptable[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
   @@unique([companyId, code])
   @@index([companyId])
@@ -1212,33 +1219,33 @@ model JournalComptable {
 
 // Écriture Comptable (Ligne de journal)
 model EcritureComptable {
-  id              String         @id @default(cuid())
-  journalId       String
-  journal         JournalComptable @relation(fields: [journalId], references: [id])
-  exerciceId      String
-  exercice        ExerciceComptable @relation(fields: [exerciceId], references: [id])
-  numeroPiece    String         // Numéro de pièce
-  dateEcriture   DateTime       @default(now())
-  compteNumero   String         // Numéro de compte OHADA
-  compteIntitule String         // Intitulé du compte
-  libelle        String         // Libellé de l'écriture
-  reference      String?        // Référence document (facture, etc.)
-  debit          Int            @default(0) // En centimes
-  credit         Int            @default(0) // En centimes
-  solde          Int            @default(0) // En centimes
-  lettrage       String?        // Code de lettrage
+  id             String            @id @default(cuid())
+  journalId      String
+  journal        JournalComptable  @relation(fields: [journalId], references: [id])
+  exerciceId     String
+  exercice       ExerciceComptable @relation(fields: [exerciceId], references: [id])
+  numeroPiece    String // Numéro de pièce
+  dateEcriture   DateTime          @default(now())
+  compteNumero   String // Numéro de compte OHADA
+  compteIntitule String // Intitulé du compte
+  libelle        String // Libellé de l'écriture
+  reference      String? // Référence document (facture, etc.)
+  debit          Int               @default(0) // En centimes
+  credit         Int               @default(0) // En centimes
+  solde          Int               @default(0) // En centimes
+  lettrage       String? // Code de lettrage
   dateLettrage   DateTime?
-  tiersType      String?        // CLIENT, FOURNISSEUR, SALARIE, AUTRE
-  tiersId        String?        // ID du tiers
-  tiersNom       String?        // Nom du tiers
-  sourceType     String?        // FACTURE, PAIEMENT, PAIE, ACHAT, VENTE, OD
-  sourceId       String?        // ID de la source
-  valide         Boolean        @default(false)
+  tiersType      String? // CLIENT, FOURNISSEUR, SALARIE, AUTRE
+  tiersId        String? // ID du tiers
+  tiersNom       String? // Nom du tiers
+  sourceType     String? // FACTURE, PAIEMENT, PAIE, ACHAT, VENTE, OD
+  sourceId       String? // ID de la source
+  valide         Boolean           @default(false)
   validePar      String?
   dateValidation DateTime?
   companyId      String
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
   @@index([journalId])
   @@index([exerciceId])
@@ -1249,22 +1256,22 @@ model EcritureComptable {
 
 // Solde Compte (Synthèse par période)
 model SoldeCompte {
-  id            String   @id @default(cuid())
-  companyId     String
-  company       Company  @relation(fields: [companyId], references: [id])
-  exerciceId    String
-  exercice      ExerciceComptable @relation(fields: [exerciceId], references: [id])
-  compteNumero  String
-  compteIntitule String
-  periode       String   // Format YYYY-MM
-  debitInitial  Int      @default(0)
-  creditInitial Int      @default(0)
-  debitMouvement Int     @default(0)
-  creditMouvement Int    @default(0)
-  debitFinal    Int      @default(0)
-  creditFinal   Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String            @id @default(cuid())
+  companyId       String
+  company         Company           @relation(fields: [companyId], references: [id])
+  exerciceId      String
+  exercice        ExerciceComptable @relation(fields: [exerciceId], references: [id])
+  compteNumero    String
+  compteIntitule  String
+  periode         String // Format YYYY-MM
+  debitInitial    Int               @default(0)
+  creditInitial   Int               @default(0)
+  debitMouvement  Int               @default(0)
+  creditMouvement Int               @default(0)
+  debitFinal      Int               @default(0)
+  creditFinal     Int               @default(0)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   @@unique([companyId, exerciceId, compteNumero, periode])
   @@index([companyId])
@@ -1274,24 +1281,24 @@ model SoldeCompte {
 
 // Ligne Bilan (Actif/Passif)
 model LigneBilan {
-  id              String   @id @default(cuid())
-  companyId       String
-  company         Company  @relation(fields: [companyId], references: [id])
-  exerciceId      String
-  exercice        ExerciceComptable @relation(fields: [exerciceId], references: [id])
-  rubrique        String   // Code rubrique OHADA
-  intitule        String
-  position        String   // ACTIF, PASSIF
-  montantBrut     Int      @default(0)
-  amortissement   Int      @default(0)
-  provisions      Int      @default(0)
-  montantNet      Int      @default(0)
-  montantPrecedent Int     @default(0) // Exercice précédent
-  ordre           Int      @default(0)
-  niveau          Int      @default(1) // Niveau dans la hiérarchie
-  parentId        String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String            @id @default(cuid())
+  companyId        String
+  company          Company           @relation(fields: [companyId], references: [id])
+  exerciceId       String
+  exercice         ExerciceComptable @relation(fields: [exerciceId], references: [id])
+  rubrique         String // Code rubrique OHADA
+  intitule         String
+  position         String // ACTIF, PASSIF
+  montantBrut      Int               @default(0)
+  amortissement    Int               @default(0)
+  provisions       Int               @default(0)
+  montantNet       Int               @default(0)
+  montantPrecedent Int               @default(0) // Exercice précédent
+  ordre            Int               @default(0)
+  niveau           Int               @default(1) // Niveau dans la hiérarchie
+  parentId         String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
   @@index([companyId])
   @@index([exerciceId])
@@ -1300,21 +1307,21 @@ model LigneBilan {
 
 // Ligne Compte de Résultat
 model LigneCompteResultat {
-  id              String   @id @default(cuid())
-  companyId       String
-  company         Company  @relation(fields: [companyId], references: [id])
-  exerciceId      String
-  exercice        ExerciceComptable @relation(fields: [exerciceId], references: [id])
-  rubrique        String
-  intitule        String
-  type            String   // CHARGE, PRODUIT
-  montant         Int      @default(0)
-  montantPrecedent Int    @default(0)
-  ordre           Int      @default(0)
-  niveau          Int      @default(1)
-  parentId        String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String            @id @default(cuid())
+  companyId        String
+  company          Company           @relation(fields: [companyId], references: [id])
+  exerciceId       String
+  exercice         ExerciceComptable @relation(fields: [exerciceId], references: [id])
+  rubrique         String
+  intitule         String
+  type             String // CHARGE, PRODUIT
+  montant          Int               @default(0)
+  montantPrecedent Int               @default(0)
+  ordre            Int               @default(0)
+  niveau           Int               @default(1)
+  parentId         String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
   @@index([companyId])
   @@index([exerciceId])
@@ -1326,31 +1333,35 @@ model LigneCompteResultat {
 // ============================================================================
 
 model Devise {
-  id            String    @id @default(cuid())
-  code          String    @unique // GNF, EUR, USD, XOF, XAF, etc.
-  nom           String
-  symbole       String
-  pays          String?
-  actif         Boolean   @default(true)
-  taux          TauxChange[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id      String  @id @default(cuid())
+  code    String  @unique // GNF, EUR, USD, XOF, XAF, etc.
+  nom     String
+  symbole String
+  pays    String?
+  actif   Boolean @default(true)
+
+  // Relations - taux source et taux cible
+  tauxSource TauxChange[] @relation("TauxSource")
+  tauxCible  TauxChange[] @relation("TauxCible")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([code])
 }
 
 model TauxChange {
-  id           String   @id @default(cuid())
+  id             String   @id @default(cuid())
   deviseSourceId String
-  deviseSource Devise  @relation("TauxSource", fields: [deviseSourceId], references: [id])
-  deviseCibleId String
-  deviseCible  Devise  @relation("TauxCible", fields: [deviseCibleId], references: [id])
-  taux         Float    // Taux de change
-  dateEffet    DateTime @default(now())
-  source       String?  // API, MANUEL, BANQUE_CENTRALE
-  actif        Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  deviseSource   Devise   @relation("TauxSource", fields: [deviseSourceId], references: [id])
+  deviseCibleId  String
+  deviseCible    Devise   @relation("TauxCible", fields: [deviseCibleId], references: [id])
+  taux           Float // Taux de change
+  dateEffet      DateTime @default(now())
+  source         String? // API, MANUEL, BANQUE_CENTRALE
+  actif          Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@index([deviseSourceId])
   @@index([deviseCibleId])
@@ -1358,18 +1369,18 @@ model TauxChange {
 }
 
 model ConversionDevise {
-  id           String   @id @default(cuid())
-  companyId    String
-  company      Company  @relation(fields: [companyId], references: [id])
-  montant      Int      // Montant original en centimes
-  deviseSource String
-  deviseCible  String
-  tauxApplique Float
-  montantConverti Int   // Montant converti en centimes
-  dateConversion DateTime @default(now())
-  reference    String?  // Facture, Paiement, etc.
-  referenceId  String?
-  createdAt    DateTime @default(now())
+  id              String   @id @default(cuid())
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id])
+  montant         Int // Montant original en centimes
+  deviseSource    String
+  deviseCible     String
+  tauxApplique    Float
+  montantConverti Int // Montant converti en centimes
+  dateConversion  DateTime @default(now())
+  reference       String? // Facture, Paiement, etc.
+  referenceId     String?
+  createdAt       DateTime @default(now())
 
   @@index([companyId])
   @@index([dateConversion])
@@ -1381,35 +1392,35 @@ model ConversionDevise {
 
 // Prospect (Lead)
 model Prospect {
-  id            String         @id @default(cuid())
-  companyId     String
-  company       Company        @relation(fields: [companyId], references: [id])
-  nom           String
-  prenom        String?
-  email         String?
-  telephone     String?
-  entreprise    String?
-  poste         String?
-  adresse       String?
-  ville         String?
-  pays          String        @default("Guinée")
-  source        String?       // SITE_WEB, REFERRAL, RESEAUX_SOCIAUX, COLD_CALLING, SALON, AUTRE
-  statut        String        @default("NOUVEAU") // NOUVEAU, CONTACTE, QUALIFIE, PROPOSITION, NEGOCIATION, GAGNE, PERDU
-  score         Int           @default(0) // Score de qualification 0-100
-  budget        Int?          // Budget estimé
-  notes         String?
-  tags          String?       // JSON array
-  assigneA      String?       // ID utilisateur assigné
-  dateContact   DateTime?
-  dateQualif    DateTime?
-  dernierContact DateTime?
+  id              String        @id @default(cuid())
+  companyId       String
+  company         Company       @relation(fields: [companyId], references: [id])
+  nom             String
+  prenom          String?
+  email           String?
+  telephone       String?
+  entreprise      String?
+  poste           String?
+  adresse         String?
+  ville           String?
+  pays            String        @default("Guinée")
+  source          String? // SITE_WEB, REFERRAL, RESEAUX_SOCIAUX, COLD_CALLING, SALON, AUTRE
+  statut          String        @default("NOUVEAU") // NOUVEAU, CONTACTE, QUALIFIE, PROPOSITION, NEGOCIATION, GAGNE, PERDU
+  score           Int           @default(0) // Score de qualification 0-100
+  budget          Int? // Budget estimé
+  notes           String?
+  tags            String? // JSON array
+  assigneA        String? // ID utilisateur assigné
+  dateContact     DateTime?
+  dateQualif      DateTime?
+  dernierContact  DateTime?
   prochaineAction DateTime?
-  opportunites  Opportunite[]
-  activites     ActiviteCRM[]
-  clientId      String?       // Si converti en client
-  client        Client?       @relation(fields: [clientId], references: [id])
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  opportunites    Opportunite[]
+  activites       ActiviteCRM[]
+  clientId        String? // Si converti en client
+  client          Client?       @relation(fields: [clientId], references: [id])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   @@index([companyId])
   @@index([statut])
@@ -1419,28 +1430,28 @@ model Prospect {
 
 // Opportunité (Pipeline de vente)
 model Opportunite {
-  id              String      @id @default(cuid())
-  companyId       String
-  company         Company     @relation(fields: [companyId], references: [id])
-  prospectId      String
-  prospect        Prospect    @relation(fields: [prospectId], references: [id])
-  nom             String
-  description     String?
-  montant         Int         @default(0) // En centimes
-  probabilite     Int         @default(0) // 0-100
-  etape           String      @default("PROSPECTION") // PROSPECTION, QUALIFICATION, PROPOSITION, NEGOCIATION, CLOSURE
-  statut          String      @default("EN_COURS") // EN_COURS, GAGNEE, PERDUE, ABANDONNEE
-  source          String?
+  id                String        @id @default(cuid())
+  companyId         String
+  company           Company       @relation(fields: [companyId], references: [id])
+  prospectId        String
+  prospect          Prospect      @relation(fields: [prospectId], references: [id])
+  nom               String
+  description       String?
+  montant           Int           @default(0) // En centimes
+  probabilite       Int           @default(0) // 0-100
+  etape             String        @default("PROSPECTION") // PROSPECTION, QUALIFICATION, PROPOSITION, NEGOCIATION, CLOSURE
+  statut            String        @default("EN_COURS") // EN_COURS, GAGNEE, PERDUE, ABANDONNEE
+  source            String?
   dateCloturePrevue DateTime?
-  dateCloture     DateTime?
-  raisonPerte     String?
-  concurrent      String?
-  activites       ActiviteCRM[]
-  devis           Devis[]
-  clientId        String?     // Client si opportunité gagnée
-  client          Client?     @relation(fields: [clientId], references: [id])
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  dateCloture       DateTime?
+  raisonPerte       String?
+  concurrent        String?
+  activites         ActiviteCRM[]
+  devis             Devis[]
+  clientId          String? // Client si opportunité gagnée
+  client            Client?       @relation(fields: [clientId], references: [id])
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   @@index([companyId])
   @@index([prospectId])
@@ -1450,28 +1461,28 @@ model Opportunite {
 
 // Activité CRM (Tâches, Appels, Emails, Réunions)
 model ActiviteCRM {
-  id            String      @id @default(cuid())
+  id            String       @id @default(cuid())
   companyId     String
-  company       Company     @relation(fields: [companyId], references: [id])
+  company       Company      @relation(fields: [companyId], references: [id])
   prospectId    String?
-  prospect      Prospect?   @relation(fields: [prospectId], references: [id])
+  prospect      Prospect?    @relation(fields: [prospectId], references: [id])
   opportuniteId String?
   opportunite   Opportunite? @relation(fields: [opportuniteId], references: [id])
-  type          String      // APPEL, EMAIL, REUNION, TACHE, NOTE
+  type          String // APPEL, EMAIL, REUNION, TACHE, NOTE
   titre         String
   description   String?
   dateDebut     DateTime
   dateFin       DateTime?
-  statut        String      @default("PLANIFIE") // PLANIFIE, EN_COURS, TERMINE, ANNULE
-  priorite      String      @default("NORMALE") // BASSE, NORMALE, HAUTE
+  statut        String       @default("PLANIFIE") // PLANIFIE, EN_COURS, TERMINE, ANNULE
+  priorite      String       @default("NORMALE") // BASSE, NORMALE, HAUTE
   resultat      String?
-  duree         Int?        // Durée en minutes
-  assigneA      String?     // ID utilisateur
-  creePar       String?     // ID utilisateur créateur
-  rappel        Boolean     @default(false)
+  duree         Int? // Durée en minutes
+  assigneA      String? // ID utilisateur
+  creePar       String? // ID utilisateur créateur
+  rappel        Boolean      @default(false)
   dateRappel    DateTime?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
   @@index([companyId])
   @@index([prospectId])
@@ -1482,33 +1493,33 @@ model ActiviteCRM {
 
 // Pipeline de Vente (Configuration)
 model PipelineVente {
-  id          String           @id @default(cuid())
+  id          String          @id @default(cuid())
   companyId   String
-  company     Company          @relation(fields: [companyId], references: [id])
+  company     Company         @relation(fields: [companyId], references: [id])
   nom         String
   description String?
-  actif       Boolean          @default(true)
-  ordre       Int              @default(0)
+  actif       Boolean         @default(true)
+  ordre       Int             @default(0)
   etapes      EtapePipeline[]
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
   @@unique([companyId, nom])
   @@index([companyId])
 }
 
 model EtapePipeline {
-  id           String        @id @default(cuid())
-  pipelineId   String
-  pipeline     PipelineVente @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
-  nom          String
-  description  String?
-  probabilite  Int           @default(0) // Probabilité par défaut
-  couleur      String?       // Code couleur hex
-  ordre        Int           @default(0)
-  actif        Boolean       @default(true)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id          String        @id @default(cuid())
+  pipelineId  String
+  pipeline    PipelineVente @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  nom         String
+  description String?
+  probabilite Int           @default(0) // Probabilité par défaut
+  couleur     String? // Code couleur hex
+  ordre       Int           @default(0)
+  actif       Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   @@index([pipelineId])
 }
