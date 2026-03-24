@@ -1,13 +1,22 @@
 // Middleware de rate limiting pour GuinéaManager
 
 import rateLimit from 'express-rate-limit';
-import { config } from '../utils/config';
 import logger from '../utils/logger';
+
+// Helper pour générer une clé IP compatible IPv6
+const getIpKey = (req: any): string => {
+  const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+  // Normaliser l'IP pour IPv6
+  if (ip === '::1' || ip === '::ffff:127.0.0.1') {
+    return '127.0.0.1';
+  }
+  return ip;
+};
 
 // Rate limiter global - 100 requêtes par minute par IP
 export const globalRateLimiter = rateLimit({
-  windowMs: config.rateLimitWindowMs, // 1 minute par défaut
-  max: config.rateLimitMaxRequests, // 100 requêtes par défaut
+  windowMs: 60 * 1000, // 1 minute
+  max: 100, // 100 requêtes
   message: {
     success: false,
     error: {
@@ -26,10 +35,10 @@ export const globalRateLimiter = rateLimit({
     res.status(429).json(options.message);
   },
   keyGenerator: (req) => {
-    // Utiliser l'IP ou l'ID utilisateur si authentifié
     const userId = (req as any).userId;
-    return userId ? `user_${userId}` : req.ip || 'unknown';
+    return userId ? `user_${userId}` : getIpKey(req);
   },
+  validate: { trustProxy: false },
 });
 
 // Rate limiter pour les tentatives de connexion - 5 tentatives par 15 minutes
@@ -45,12 +54,12 @@ export const loginRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: true, // Ne pas compter les connexions réussies
+  skipSuccessfulRequests: true,
   keyGenerator: (req) => {
-    // Limiter par email + IP
     const email = req.body?.email || 'unknown';
-    return `login_${email}_${req.ip}`;
+    return `login_${email}_${getIpKey(req)}`;
   },
+  validate: { trustProxy: false },
 });
 
 // Rate limiter pour l'envoi d'OTP - 3 par 5 minutes
@@ -70,6 +79,7 @@ export const otpRateLimiter = rateLimit({
     const phone = req.body?.phone || 'unknown';
     return `otp_${phone}`;
   },
+  validate: { trustProxy: false },
 });
 
 // Rate limiter pour la création de ressources - 30 par minute
@@ -87,8 +97,9 @@ export const createRateLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => {
     const companyId = (req as any).companyId || 'anonymous';
-    return `create_${companyId}_${req.ip}`;
+    return `create_${companyId}_${getIpKey(req)}`;
   },
+  validate: { trustProxy: false },
 });
 
 // Rate limiter pour l'API publique (webhooks, callbacks) - 1000 par minute
@@ -104,6 +115,7 @@ export const publicApiRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false },
 });
 
 // Rate limiter pour les exports PDF - 20 par minute
@@ -123,6 +135,7 @@ export const exportRateLimiter = rateLimit({
     const userId = (req as any).userId || 'anonymous';
     return `export_${userId}`;
   },
+  validate: { trustProxy: false },
 });
 
 // Rate limiter pour les opérations de paiement - 10 par minute
@@ -142,6 +155,7 @@ export const paymentRateLimiter = rateLimit({
     const companyId = (req as any).companyId || 'anonymous';
     return `payment_${companyId}`;
   },
+  validate: { trustProxy: false },
 });
 
 export default globalRateLimiter;
