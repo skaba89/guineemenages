@@ -127,7 +127,7 @@ export function useNotifications() {
   const getVapidKey = useCallback(async (): Promise<string | null> => {
     try {
       const token = localStorage.getItem('guineamanager-token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/notifications/vapid-key`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/notifications/vapid-key`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       const data = await response.json();
@@ -198,7 +198,7 @@ export function useNotifications() {
       });
 
       // Send subscription to server
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/notifications/subscribe`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/notifications/subscribe`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -245,7 +245,7 @@ export function useNotifications() {
         await subscription.unsubscribe();
         
         // Notify server
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/notifications/unsubscribe`, {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/notifications/unsubscribe`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
