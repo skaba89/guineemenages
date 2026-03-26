@@ -1,0 +1,1525 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// PLAN D'ABONNEMENT
+// ============================================================================
+
+model PlanAbonnement {
+  id               String   @id @default(cuid())
+  nom              String // PETITE, MOYENNE, GRANDE, ENTERPRISE
+  description      String?
+  prixMensuel      Int      @default(0) // En centimes
+  prixAnnuel       Int      @default(0) // En centimes
+  maxEmployes      Int      @default(5)
+  maxUtilisateurs  Int      @default(2)
+  maxClients       Int      @default(50)
+  maxProduits      Int      @default(100)
+  maxFacturesMois  Int      @default(50)
+  modules          String   @default("facturation,clients,produits") // JSON array of enabled modules
+  support          String   @default("email") // email, chat, phone, dedicated
+  sauvegardeAuto   Boolean  @default(true)
+  apiAccess        Boolean  @default(false)
+  personnalisation Boolean  @default(false)
+  multiSociete     Boolean  @default(false)
+  rapportsAvances  Boolean  @default(false)
+  actif            Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  companies Company[]
+}
+
+// ============================================================================
+// SOCIÉTÉ / ENTREPRISE
+// ============================================================================
+
+model Company {
+  id            String  @id @default(cuid())
+  nom           String
+  email         String?
+  telephone     String?
+  adresse       String?
+  ville         String?
+  pays          String  @default("Guinée")
+  codePays      String  @default("GN")
+  ninea         String? // Numéro d'identification nationale
+  logo          String?
+  devise        String  @default("GNF")
+  symboleDevise String  @default("GNF")
+
+  // Plan et abonnement
+  planId              String?         @default("free")
+  planAbonnement      PlanAbonnement? @relation(fields: [planId], references: [id])
+  dateDebutAbonnement DateTime?
+  dateFinAbonnement   DateTime?
+
+  // Configuration fiscale par pays (peut être personnalisée)
+  configTauxCNSSEmploye   Float? // Taux CNSS employé personnalisé
+  configTauxCNSSEmployeur Float? // Taux CNSS employeur personnalisé
+  configPlafondCNSS       Int? // Plafond CNSS personnalisé en centimes
+  configTauxTVA           Float? @default(0.18)
+
+  // Préférences
+  langue         String @default("fr")
+  fuseauHoraire  String @default("Africa/Conakry")
+  formatDateTime String @default("DD/MM/YYYY")
+
+  // Notifications
+  notificationEmail Boolean @default(true)
+  notificationSMS   Boolean @default(false)
+
+  // Statut
+  actif        Boolean   @default(true)
+  dateEssaiFin DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users                 User[]
+  clients               Client[]
+  produits              Produit[]
+  factures              Facture[]
+  employes              Employe[]
+  bulletins             BulletinPaie[]
+  depenses              Depense[]
+  parametres            ParametreSociete[]
+  historiqueAbonnements HistoriqueAbonnement[]
+  devis                 Devis[]
+  paiementsAbonnement   PaiementAbonnement[]
+  tickets               SupportTicket[]
+  entrepots             Entrepot[]
+  fournisseurs          Fournisseur[]
+  commandesClient       CommandeClient[]
+  commandesFournisseur  CommandeFournisseur[]
+  inventaires           Inventaire[]
+  transfertsStock       TransfertStock[]
+  bonsLivraison         BonLivraison[]
+  exercicesComptables   ExerciceComptable[]
+  journauxComptables    JournalComptable[]
+  soldesComptes         SoldeCompte[]
+  lignesBilan           LigneBilan[]
+  lignesCompteResultat  LigneCompteResultat[]
+  conversionsDevise     ConversionDevise[]
+  prospects             Prospect[]
+  opportunites          Opportunite[]
+  activitesCRM          ActiviteCRM[]
+  pipelinesVente        PipelineVente[]
+
+  @@index([pays])
+  @@index([planId])
+}
+
+// ============================================================================
+// PARAMÈTRES SOCIÉTÉ
+// ============================================================================
+
+model ParametreSociete {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Clé et valeur du paramètre
+  cle    String // ex: "taux_horaire_defaut", "jours_conge_annuel"
+  valeur String // Valeur en string (convertir selon le type)
+  type   String @default("string") // string, number, boolean, json
+
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, cle])
+  @@index([companyId])
+}
+
+// ============================================================================
+// HISTORIQUE ABONNEMENTS
+// ============================================================================
+
+model HistoriqueAbonnement {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
+
+  planId            String
+  planNom           String
+  dateDebut         DateTime
+  dateFin           DateTime?
+  prix              Int // En centimes
+  modePaiement      String? // ORANGE_MONEY, MTN_MONEY, VIREMENT, CARTE
+  referencePaiement String?
+  statut            String    @default("ACTIF") // ACTIF, EXPIRE, ANNULE, SUSPENDU
+
+  createdAt DateTime @default(now())
+
+  @@index([companyId])
+}
+
+// ============================================================================
+// UTILISATEUR
+// ============================================================================
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  password     String
+  nom          String
+  prenom       String
+  telephone    String?
+  avatar       String?
+  role         String    @default("COMPTABLE") // ADMIN, MANAGER, COMPTABLE, EMPLOYE, RH
+  companyId    String
+  company      Company   @relation(fields: [companyId], references: [id])
+  actif        Boolean   @default(true)
+  emailVerifie Boolean   @default(false)
+  dernierLogin DateTime?
+  preferences  String? // JSON pour les préférences utilisateur
+
+  // Two-Factor Authentication
+  twoFactorEnabled       Boolean   @default(false)
+  twoFactorMethod        String? // totp, sms
+  twoFactorSecret        String? // TOTP secret (base64)
+  twoFactorOTP           String? // Current SMS OTP
+  twoFactorOTPExpiry     DateTime? // OTP expiry time
+  twoFactorRecoveryCodes String? // JSON array of recovery codes
+
+  // Password Reset
+  resetToken       String?
+  resetTokenExpiry DateTime?
+
+  // Email Verification
+  verificationToken       String?
+  verificationTokenExpiry DateTime?
+
+  // Login Attempts (for security)
+  loginAttempts Int       @default(0)
+  lockedUntil   DateTime?
+
+  // Relations
+  assignedTickets SupportTicket[] @relation("AssignedTickets")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([email])
+}
+
+// ============================================================================
+// CLIENT
+// ============================================================================
+
+model Client {
+  id           String           @id @default(cuid())
+  nom          String
+  email        String?
+  telephone    String?
+  adresse      String?
+  ville        String?
+  pays         String           @default("Guinée")
+  type         String           @default("PARTICULIER") // PARTICULIER, ENTREPRISE
+  ninea        String? // Pour les entreprises
+  totalAchats  Int              @default(0)
+  notes        String?
+  companyId    String
+  company      Company          @relation(fields: [companyId], references: [id])
+  factures     Facture[]
+  devis        Devis[]
+  commandes    CommandeClient[]
+  prospects    Prospect[]
+  opportunites Opportunite[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([companyId])
+  @@index([email])
+}
+
+// ============================================================================
+// PRODUIT / SERVICE
+// ============================================================================
+
+model Produit {
+  id                        String                     @id @default(cuid())
+  nom                       String
+  description               String?
+  reference                 String? // Code produit/SKU
+  prixUnitaire              Int
+  unite                     String                     @default("Unité")
+  stockActuel               Int                        @default(0)
+  stockMin                  Int                        @default(0)
+  stockMax                  Int?
+  categorie                 String?
+  tva                       Float?                     @default(0.18)
+  actif                     Boolean                    @default(true)
+  type                      String                     @default("PRODUIT") // PRODUIT, SERVICE
+  companyId                 String
+  company                   Company                    @relation(fields: [companyId], references: [id])
+  lignesFacture             LigneFacture[]
+  lignesDevis               LigneDevis[]
+  stocksEntrepot            StockEntrepot[]
+  lignesCommandeFournisseur LigneCommandeFournisseur[]
+  lignesCommandeClient      LigneCommandeClient[]
+  lignesInventaire          LigneInventaire[]
+  lignesTransfert           LigneTransfert[]
+  lignesBonLivraison        LigneBonLivraison[]
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+
+  @@index([companyId])
+  @@index([categorie])
+}
+
+// ============================================================================
+// FACTURE
+// ============================================================================
+
+model Facture {
+  id           String         @id @default(cuid())
+  numero       String
+  clientId     String
+  client       Client         @relation(fields: [clientId], references: [id])
+  dateEmission DateTime       @default(now())
+  dateEcheance DateTime
+  montantHT    Int
+  montantTVA   Int
+  montantTTC   Int
+  statut       String         @default("BROUILLON") // BROUILLON, ENVOYEE, PAYEE, EN_RETARD, ANNULEE
+  modePaiement String? // ESPECES, VIREMENT, ORANGE_MONEY, MTN_MONEY, CHEQUE, CARTE
+  notes        String?
+  conditions   String? // Conditions de paiement
+  companyId    String
+  company      Company        @relation(fields: [companyId], references: [id])
+  lignes       LigneFacture[]
+  paiements    Paiement[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([numero, companyId])
+  @@index([companyId])
+  @@index([statut])
+  @@index([dateEmission])
+}
+
+model LigneFacture {
+  id           String   @id @default(cuid())
+  factureId    String
+  facture      Facture  @relation(fields: [factureId], references: [id], onDelete: Cascade)
+  produitId    String?
+  produit      Produit? @relation(fields: [produitId], references: [id])
+  description  String
+  quantite     Int
+  prixUnitaire Int
+  tauxTVA      Float    @default(0.18)
+  montantHT    Int
+  montantTVA   Int
+  montantTTC   Int
+
+  @@index([factureId])
+  @@index([produitId])
+}
+
+model Paiement {
+  id                  String   @id @default(cuid())
+  factureId           String
+  facture             Facture  @relation(fields: [factureId], references: [id])
+  montant             Int
+  date                DateTime @default(now())
+  mode                String // ESPECES, VIREMENT, ORANGE_MONEY, MTN_MONEY, CHEQUE, CARTE
+  reference           String?
+  referenceMobile     String? // Numéro de téléphone pour Mobile Money
+  orangeTransactionId String? // ID de la transaction Orange Money
+  mtnTransactionId    String? // ID de la transaction MTN Money
+  notes               String?
+  createdAt           DateTime @default(now())
+
+  @@index([factureId])
+}
+
+// ============================================================================
+// EMPLOYÉ
+// ============================================================================
+
+model Employe {
+  id                    String         @id @default(cuid())
+  matricule             String
+  nom                   String
+  prenom                String
+  email                 String?
+  telephone             String?
+  adresse               String?
+  dateNaissance         DateTime?
+  lieuNaissance         String?
+  nationalite           String?
+  situationMatrimoniale String? // CELIBATAIRE, MARIE, DIVORCE, VEUF
+  nombreEnfants         Int            @default(0)
+  dateEmbauche          DateTime
+  dateDepart            DateTime?
+  motifDepart           String?
+  poste                 String
+  departement           String?
+  salaireBase           Int
+  typeContrat           String         @default("CDI") // CDI, CDD, APPRENTISSAGE, STAGE
+  dureeContratMois      Int? // Pour CDD
+  actif                 Boolean        @default(true)
+  photo                 String?
+  numeroCNSS            String?
+  nombrePartsFiscales   Int            @default(1)
+  companyId             String
+  company               Company        @relation(fields: [companyId], references: [id])
+  bulletins             BulletinPaie[]
+  conges                Conge[]
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  @@unique([matricule, companyId])
+  @@index([companyId])
+  @@index([departement])
+}
+
+// ============================================================================
+// CONGÉS
+// ============================================================================
+
+model Conge {
+  id              String    @id @default(cuid())
+  employeId       String
+  employe         Employe   @relation(fields: [employeId], references: [id])
+  type            String // ANNUEL, MALADIE, MATERNITE, PATERNITE, SANS_SOLDE, EXCEPTIONNEL
+  dateDebut       DateTime
+  dateFin         DateTime
+  nombreJours     Int
+  motif           String?
+  statut          String    @default("EN_ATTENTE") // EN_ATTENTE, APPROUVE, REFUSE, ANNULE
+  approuvePar     String?
+  dateApprobation DateTime?
+  commentaire     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([employeId])
+  @@index([statut])
+}
+
+// ============================================================================
+// BULLETIN DE PAIE
+// ============================================================================
+
+model BulletinPaie {
+  id              String  @id @default(cuid())
+  employeId       String
+  employe         Employe @relation(fields: [employeId], references: [id])
+  mois            Int
+  annee           Int
+  periodePaiement String? // Format: "Janvier 2024"
+
+  // Gains
+  salaireBase           Int
+  heuresSupplementaires Int     @default(0)
+  tauxHoraireSupp       Int     @default(0)
+  montantHeuresSupp     Int     @default(0)
+  primes                Int     @default(0)
+  primesDetail          String? // JSON avec détail des primes
+  indemnites            Int     @default(0)
+  indemnitesDetail      String? // JSON avec détail des indemnités
+  autresAvantages       Int     @default(0)
+  brutTotal             Int
+
+  // Retenues
+  baseCNSS       Int
+  cnssEmploye    Int
+  cnssEmployeur  Int
+  baseImposable  Int
+  ipr            Int
+  autresRetenues Int @default(0)
+  acomptes       Int @default(0)
+  totalRetenues  Int
+
+  // Résultat
+  netAPayer          Int
+  netImposable       Int
+  coutTotalEmployeur Int
+
+  // Taxes additionnelles (pour certains pays)
+  taxesAdditionnelles String? // JSON array
+
+  // Statut
+  statut            String    @default("BROUILLON") // BROUILLON, VALIDE, PAYE
+  datePaiement      DateTime?
+  modePaiement      String?
+  referencePaiement String?
+
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([employeId, mois, annee])
+  @@index([companyId])
+  @@index([statut])
+}
+
+// ============================================================================
+// DÉPENSE
+// ============================================================================
+
+model Depense {
+  id            String   @id @default(cuid())
+  description   String
+  montant       Int
+  categorie     String
+  sousCategorie String?
+  date          DateTime @default(now())
+  modePaiement  String // ESPECES, VIREMENT, ORANGE_MONEY, MTN_MONEY, CHEQUE, CARTE
+  beneficiaire  String?
+  notes         String?
+  recuUrl       String?
+  valide        Boolean  @default(false)
+  validePar     String?
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([categorie])
+  @@index([date])
+}
+
+// ============================================================================
+// CATÉGORIE DÉPENSE
+// ============================================================================
+
+model CategorieDepense {
+  id          String   @id @default(cuid())
+  nom         String
+  description String?
+  couleur     String? // Code couleur hex
+  icone       String? // Nom de l'icône
+  companyId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([nom, companyId])
+  @@index([companyId])
+}
+
+// ============================================================================
+// JOURNAL DES OPÉRATIONS (AUDIT)
+// ============================================================================
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, etc.
+  table     String // Table affectée
+  recordId  String? // ID de l'enregistrement
+  userId    String?
+  companyId String?
+  details   String? // JSON avec les détails de l'action
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([companyId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// NOTIFICATIONS
+// ============================================================================
+
+model Notification {
+  id         String   @id @default(cuid())
+  userId     String
+  titre      String
+  message    String
+  type       String // INFO, WARNING, SUCCESS, ERROR
+  lu         Boolean  @default(false)
+  actionUrl  String? // URL vers l'action concernée
+  actionType String? // FACTURE, PAIE, STOCK, etc.
+  actionId   String? // ID de l'élément concerné
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([lu])
+}
+
+// ============================================================================
+// SMS LOG
+// ============================================================================
+
+model SmsLog {
+  id        String   @id @default(cuid())
+  telephone String
+  message   String
+  statut    String // ENVOYE, ECHEC, EN_ATTENTE
+  erreur    String?
+  cout      Int      @default(0) // En centimes
+  createdAt DateTime @default(now())
+
+  @@index([telephone])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// EMAIL LOG
+// ============================================================================
+
+model EmailLog {
+  id           String   @id @default(cuid())
+  destinataire String
+  sujet        String
+  contenu      String?
+  statut       String // ENVOYE, ECHEC, EN_ATTENTE
+  erreur       String?
+  templateId   String?
+  createdAt    DateTime @default(now())
+
+  @@index([destinataire])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// TÂCHES PLANIFIÉES
+// ============================================================================
+
+model TachePlanifiee {
+  id             String    @id @default(cuid())
+  nom            String
+  description    String?
+  type           String // RAPPEL_FACTURE, RAPPORT_MENSUEL, SAUVEGARDE, etc.
+  cronExpression String?
+  prochaineExec  DateTime?
+  derniereExec   DateTime?
+  actif          Boolean   @default(true)
+  configuration  String? // JSON
+  derniereErreur String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([type])
+  @@index([prochaineExec])
+}
+
+// ============================================================================
+// SUPPORT TICKETS
+// ============================================================================
+
+model SupportTicket {
+  id          String @id @default(cuid())
+  sujet       String
+  description String
+  priorite    String @default("NORMALE") // BASSE, NORMALE, HAUTE, CRITIQUE
+  statut      String @default("OUVERT") // OUVERT, EN_COURS, EN_ATTENTE, RESOLU, FERME
+  categorie   String @default("AUTRE") // TECHNIQUE, FACTURATION, COMPTE, AUTRE
+
+  userId    String // Utilisateur ayant créé le ticket
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
+
+  assigneeId String? // Agent support assigné
+  assignee   User?   @relation("AssignedTickets", fields: [assigneeId], references: [id])
+
+  reponses      TicketReponse[]
+  piecesJointes String? // JSON array des URLs des pièces jointtes
+
+  satisfaction Int? // Note de satisfaction 1-5
+  commentaire  String? // Commentaire de satisfaction
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  resoluAt  DateTime?
+  fermeAt   DateTime?
+
+  @@index([userId])
+  @@index([companyId])
+  @@index([statut])
+  @@index([priorite])
+}
+
+model TicketReponse {
+  id            String        @id @default(cuid())
+  ticketId      String
+  ticket        SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  auteurId      String // ID de l'utilisateur ou agent
+  auteurType    String // USER, AGENT, SYSTEM
+  message       String
+  piecesJointes String? // JSON array des URLs
+
+  interne Boolean @default(false) // Note interne (non visible par le client)
+
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+// ============================================================================
+// PAIEMENTS ABONNEMENTS
+// ============================================================================
+
+model PaiementAbonnement {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
+
+  montant Int // En centimes
+  devise  String @default("GNF")
+
+  methode         String // ORANGE_MONEY, MTN_MONEY, CARTE, VIREMENT
+  reference       String? // Référence de la transaction
+  numeroTelephone String? // Pour Mobile Money
+
+  statut         String  @default("EN_ATTENTE") // EN_ATTENTE, REUSSI, ECHEC, REMBOURSE
+  detailsReponse String? // JSON de la réponse du fournisseur de paiement
+
+  planId  String
+  planNom String
+  duree   String // MENSUEL, ANNUEL
+
+  factureUrl String? // URL de la facture de paiement
+
+  createdAt DateTime  @default(now())
+  traiteAt  DateTime?
+
+  @@index([companyId])
+  @@index([statut])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// DEVIS
+// ============================================================================
+
+model Devis {
+  id       String @id @default(cuid())
+  numero   String
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id])
+
+  dateEmission DateTime @default(now())
+  dateValidite DateTime // Date d'expiration du devis
+
+  montantHT  Int
+  montantTVA Int
+  montantTTC Int
+
+  statut     String  @default("BROUILLON") // BROUILLON, ENVOYE, ACCEPTE, REFUSE, EXPIRE
+  conditions String?
+  notes      String?
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
+
+  lignes        LigneDevis[]
+  factureId     String? // Si converti en facture
+  opportuniteId String? // Lien avec opportunité CRM
+  opportunite   Opportunite? @relation(fields: [opportuniteId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([numero, companyId])
+  @@index([companyId])
+  @@index([statut])
+}
+
+model LigneDevis {
+  id        String   @id @default(cuid())
+  devisId   String
+  devis     Devis    @relation(fields: [devisId], references: [id], onDelete: Cascade)
+  produitId String?
+  produit   Produit? @relation(fields: [produitId], references: [id])
+
+  description  String
+  quantite     Int
+  prixUnitaire Int
+  tauxTVA      Float  @default(0.18)
+  montantHT    Int
+  montantTVA   Int
+  montantTTC   Int
+
+  @@index([devisId])
+}
+
+// ============================================================================
+// NOTIFICATIONS PUSH
+// ============================================================================
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String // Clé publique
+  auth      String // Clé d'authentification
+  userAgent String?
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ============================================================================
+// ORANGE MONEY - Comptes et Transactions
+// ============================================================================
+
+model OrangeMoneyAccount {
+  id           String   @id @default(cuid())
+  companyId    String
+  apiKey       String
+  apiSecret    String
+  merchantCode String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+model OrangeMoneyTransaction {
+  id            String    @id @default(cuid())
+  companyId     String
+  orderId       String    @unique
+  orangeTxId    String?
+  amount        Int
+  currency      String    @default("GNF")
+  customerPhone String
+  customerName  String?
+  status        String    @default("PENDING") // PENDING, SUCCESS, FAILED, CANCELLED
+  errorMessage  String?
+  metadata      String? // JSON pour données additionnelles (factureId, etc.)
+  expiresAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([companyId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// MTN MONEY - Comptes et Transactions
+// ============================================================================
+
+model MtnMoneyAccount {
+  id              String   @id @default(cuid())
+  companyId       String
+  subscriberKey   String
+  subscriptionKey String
+  apiKey          String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+model MtnMoneyTransaction {
+  id           String    @id @default(cuid())
+  companyId    String
+  reference    String    @unique
+  mtnTxId      String?
+  amount       Int
+  currency     String    @default("GNF")
+  phoneNumber  String
+  payerMessage String?
+  payeeNote    String?
+  status       String    @default("PENDING") // PENDING, SUCCESS, FAILED, CANCELLED
+  errorMessage String?
+  metadata     String? // JSON
+  expiresAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([companyId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// NOTIFICATIONS PARAMÈTRES
+// ============================================================================
+
+model NotificationSettings {
+  id           String  @id @default(cuid())
+  companyId    String
+  emailEnabled Boolean @default(true)
+  smsEnabled   Boolean @default(false)
+  pushEnabled  Boolean @default(true)
+
+  // Types de notifications
+  invoiceCreated       Boolean @default(true)
+  invoicePaid          Boolean @default(true)
+  invoiceReminder      Boolean @default(true)
+  payrollReady         Boolean @default(true)
+  employeeHired        Boolean @default(true)
+  stockAlert           Boolean @default(true)
+  subscriptionExpiring Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+// ============================================================================
+// ENTREPÔTS (WAREHOUSES)
+// ============================================================================
+
+model Entrepot {
+  id               String           @id @default(cuid())
+  nom              String
+  code             String? // Code court pour identification
+  adresse          String?
+  ville            String?
+  telephone        String?
+  responsable      String?
+  actif            Boolean          @default(true)
+  parDefaut        Boolean          @default(false) // Entrepôt par défaut
+  companyId        String
+  company          Company          @relation(fields: [companyId], references: [id])
+  stocks           StockEntrepot[]
+  transfertsSource TransfertStock[] @relation("TransfertSource")
+  transfertsDest   TransfertStock[] @relation("TransfertDest")
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@unique([nom, companyId])
+  @@index([companyId])
+}
+
+model StockEntrepot {
+  id          String   @id @default(cuid())
+  entrepotId  String
+  entrepot    Entrepot @relation(fields: [entrepotId], references: [id], onDelete: Cascade)
+  produitId   String
+  produit     Produit  @relation(fields: [produitId], references: [id], onDelete: Cascade)
+  quantite    Int      @default(0)
+  emplacement String? // Localisation dans l'entrepôt
+  companyId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([entrepotId, produitId])
+  @@index([produitId])
+  @@index([entrepotId])
+}
+
+model TransfertStock {
+  id               String           @id @default(cuid())
+  numero           String
+  entrepotSourceId String
+  entrepotSource   Entrepot         @relation("TransfertSource", fields: [entrepotSourceId], references: [id])
+  entrepotDestId   String
+  entrepotDest     Entrepot         @relation("TransfertDest", fields: [entrepotDestId], references: [id])
+  dateTransfert    DateTime         @default(now())
+  statut           String           @default("EN_ATTENTE") // EN_ATTENTE, VALIDÉ, ANNULÉ
+  notes            String?
+  companyId        String
+  company          Company          @relation(fields: [companyId], references: [id])
+  lignes           LigneTransfert[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@unique([numero, companyId])
+  @@index([companyId])
+}
+
+model LigneTransfert {
+  id          String         @id @default(cuid())
+  transfertId String
+  transfert   TransfertStock @relation(fields: [transfertId], references: [id], onDelete: Cascade)
+  produitId   String
+  produit     Produit        @relation(fields: [produitId], references: [id])
+  quantite    Int
+  createdAt   DateTime       @default(now())
+
+  @@index([transfertId])
+  @@index([produitId])
+}
+
+// ============================================================================
+// FOURNISSEURS
+// ============================================================================
+
+model Fournisseur {
+  id         String                @id @default(cuid())
+  code       String? // Code fournisseur
+  nom        String
+  email      String?
+  telephone  String?
+  adresse    String?
+  ville      String?
+  pays       String                @default("Guinée")
+  ninea      String? // Numéro d'identification
+  contactNom String? // Nom du contact principal
+  contactTel String? // Téléphone du contact
+  notes      String?
+  actif      Boolean               @default(true)
+  companyId  String
+  company    Company               @relation(fields: [companyId], references: [id])
+  commandes  CommandeFournisseur[]
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+
+  @@unique([nom, companyId])
+  @@index([companyId])
+}
+
+model CommandeFournisseur {
+  id                  String                     @id @default(cuid())
+  numero              String
+  fournisseurId       String
+  fournisseur         Fournisseur                @relation(fields: [fournisseurId], references: [id])
+  dateCommande        DateTime                   @default(now())
+  dateLivraisonPrevue DateTime?
+  dateLivraison       DateTime?
+  montantHT           Int
+  montantTVA          Int                        @default(0)
+  montantTTC          Int
+  statut              String                     @default("EN_ATTENTE") // BROUILLON, EN_ATTENTE, CONFIRME, RECU_PARTIEL, RECU, ANNULE
+  modePaiement        String?
+  notes               String?
+  companyId           String
+  company             Company                    @relation(fields: [companyId], references: [id])
+  lignes              LigneCommandeFournisseur[]
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
+
+  @@unique([numero, companyId])
+  @@index([companyId])
+  @@index([fournisseurId])
+  @@index([statut])
+}
+
+model LigneCommandeFournisseur {
+  id            String              @id @default(cuid())
+  commandeId    String
+  commande      CommandeFournisseur @relation(fields: [commandeId], references: [id], onDelete: Cascade)
+  produitId     String
+  produit       Produit             @relation(fields: [produitId], references: [id])
+  description   String?
+  quantite      Int
+  quantiteRecue Int                 @default(0)
+  prixUnitaire  Int
+  montantHT     Int
+  recu          Boolean             @default(false)
+  dateReception DateTime?
+  createdAt     DateTime            @default(now())
+
+  @@index([commandeId])
+  @@index([produitId])
+}
+
+// ============================================================================
+// INVENTAIRES
+// ============================================================================
+
+model Inventaire {
+  id         String            @id @default(cuid())
+  numero     String
+  date       DateTime          @default(now())
+  statut     String            @default("EN_COURS") // EN_COURS, TERMINE, ANNULE
+  entrepotId String? // Optionnel: inventaire par entrepôt
+  notes      String?
+  companyId  String
+  company    Company           @relation(fields: [companyId], references: [id])
+  lignes     LigneInventaire[]
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@unique([numero, companyId])
+  @@index([companyId])
+}
+
+model LigneInventaire {
+  id             String     @id @default(cuid())
+  inventaireId   String
+  inventaire     Inventaire @relation(fields: [inventaireId], references: [id], onDelete: Cascade)
+  produitId      String
+  produit        Produit    @relation(fields: [produitId], references: [id])
+  stockTheorique Int
+  stockReel      Int
+  ecart          Int // stockReel - stockTheorique
+  prixUnitaire   Int
+  valeurEcart    Int // ecart * prixUnitaire
+  notes          String?
+  createdAt      DateTime   @default(now())
+
+  @@unique([inventaireId, produitId])
+  @@index([inventaireId])
+  @@index([produitId])
+}
+
+// ============================================================================
+// COMMANDES CLIENTS
+// ============================================================================
+
+model CommandeClient {
+  id               String                @id @default(cuid())
+  numero           String
+  clientId         String
+  client           Client                @relation(fields: [clientId], references: [id])
+  dateCommande     DateTime              @default(now())
+  dateLivraison    DateTime?
+  montantHT        Int
+  montantTVA       Int                   @default(0)
+  montantTTC       Int
+  statut           String                @default("EN_ATTENTE") // EN_ATTENTE, CONFIRME, EN_PREPARATION, EXPEDIE, LIVRE, ANNULE
+  adresseLivraison String?
+  notes            String?
+  devisId          String?
+  companyId        String
+  company          Company               @relation(fields: [companyId], references: [id])
+  lignes           LigneCommandeClient[]
+  bonLivraison     BonLivraison?
+  factureId        String?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  @@unique([numero, companyId])
+  @@index([companyId])
+  @@index([clientId])
+  @@index([statut])
+}
+
+model LigneCommandeClient {
+  id             String         @id @default(cuid())
+  commandeId     String
+  commande       CommandeClient @relation(fields: [commandeId], references: [id], onDelete: Cascade)
+  produitId      String?
+  produit        Produit?       @relation(fields: [produitId], references: [id])
+  description    String
+  quantite       Int
+  quantiteLivree Int            @default(0)
+  prixUnitaire   Int
+  tauxTVA        Float          @default(0.18)
+  montantHT      Int
+  montantTVA     Int            @default(0)
+  montantTTC     Int
+  createdAt      DateTime       @default(now())
+
+  @@index([commandeId])
+  @@index([produitId])
+}
+
+model BonLivraison {
+  id            String              @id @default(cuid())
+  numero        String
+  commandeId    String              @unique
+  commande      CommandeClient      @relation(fields: [commandeId], references: [id])
+  date          DateTime            @default(now())
+  statut        String              @default("EN_ATTENTE") // EN_ATTENTE, LIVRE
+  adresse       String?
+  notes         String?
+  signature     String? // Base64 signature
+  nomSignataire String?
+  companyId     String
+  company       Company             @relation(fields: [companyId], references: [id])
+  lignes        LigneBonLivraison[]
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@unique([numero, companyId])
+  @@index([companyId])
+}
+
+model LigneBonLivraison {
+  id             String       @id @default(cuid())
+  bonLivraisonId String
+  bonLivraison   BonLivraison @relation(fields: [bonLivraisonId], references: [id], onDelete: Cascade)
+  produitId      String?
+  produit        Produit?     @relation(fields: [produitId], references: [id])
+  description    String
+  quantite       Int
+  createdAt      DateTime     @default(now())
+
+  @@index([bonLivraisonId])
+}
+
+// ============================================================================
+// COMPTABILITÉ OHADA
+// ============================================================================
+
+// Plan Comptable OHADA (Syscohada révisé)
+model PlanComptableOHADA {
+  id          String   @id @default(cuid())
+  numero      String   @unique // Numéro de compte (ex: 101, 401, 701)
+  intitule    String // Intitulé du compte
+  classe      Int // Classe (1-9)
+  sousClasse  String? // Sous-classe
+  categorie   String? // ACTIF, PASSIF, CHARGE, PRODUIT, RESULTAT
+  type        String   @default("COMPTE") // COMPTE, SOUS_COMPTE, TIERCE
+  parent      String? // Numéro du compte parent
+  actif       Boolean  @default(true)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([classe])
+  @@index([categorie])
+}
+
+// Exercice Comptable
+model ExerciceComptable {
+  id          String    @id @default(cuid())
+  companyId   String
+  company     Company   @relation(fields: [companyId], references: [id])
+  annee       Int
+  dateDebut   DateTime
+  dateFin     DateTime
+  statut      String    @default("OUVERT") // OUVERT, CLOTURE, ARCHIVE
+  dateCloture DateTime?
+  cluturePar  String?
+  resultatNet Int       @default(0) // En centimes
+  notes       String?
+
+  // Relations inverses
+  ecritures            EcritureComptable[]
+  soldesComptes        SoldeCompte[]
+  lignesBilan          LigneBilan[]
+  lignesCompteResultat LigneCompteResultat[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, annee])
+  @@index([companyId])
+  @@index([statut])
+}
+
+// Journal Comptable
+model JournalComptable {
+  id                 String              @id @default(cuid())
+  companyId          String
+  company            Company             @relation(fields: [companyId], references: [id])
+  code               String // Code journal (VT, AC, BK, OD, etc.)
+  nom                String // Nom du journal
+  type               String // ACHATS, VENTES, BANQUE, CAISSE, OD, GENERAL
+  compteContrepartie String? // Compte de contrepartie par défaut
+  actif              Boolean             @default(true)
+  ecritures          EcritureComptable[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@unique([companyId, code])
+  @@index([companyId])
+}
+
+// Écriture Comptable (Ligne de journal)
+model EcritureComptable {
+  id             String            @id @default(cuid())
+  journalId      String
+  journal        JournalComptable  @relation(fields: [journalId], references: [id])
+  exerciceId     String
+  exercice       ExerciceComptable @relation(fields: [exerciceId], references: [id])
+  numeroPiece    String // Numéro de pièce
+  dateEcriture   DateTime          @default(now())
+  compteNumero   String // Numéro de compte OHADA
+  compteIntitule String // Intitulé du compte
+  libelle        String // Libellé de l'écriture
+  reference      String? // Référence document (facture, etc.)
+  debit          Int               @default(0) // En centimes
+  credit         Int               @default(0) // En centimes
+  solde          Int               @default(0) // En centimes
+  lettrage       String? // Code de lettrage
+  dateLettrage   DateTime?
+  tiersType      String? // CLIENT, FOURNISSEUR, SALARIE, AUTRE
+  tiersId        String? // ID du tiers
+  tiersNom       String? // Nom du tiers
+  sourceType     String? // FACTURE, PAIEMENT, PAIE, ACHAT, VENTE, OD
+  sourceId       String? // ID de la source
+  valide         Boolean           @default(false)
+  validePar      String?
+  dateValidation DateTime?
+  companyId      String
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([journalId])
+  @@index([exerciceId])
+  @@index([compteNumero])
+  @@index([dateEcriture])
+  @@index([companyId])
+}
+
+// Solde Compte (Synthèse par période)
+model SoldeCompte {
+  id              String            @id @default(cuid())
+  companyId       String
+  company         Company           @relation(fields: [companyId], references: [id])
+  exerciceId      String
+  exercice        ExerciceComptable @relation(fields: [exerciceId], references: [id])
+  compteNumero    String
+  compteIntitule  String
+  periode         String // Format YYYY-MM
+  debitInitial    Int               @default(0)
+  creditInitial   Int               @default(0)
+  debitMouvement  Int               @default(0)
+  creditMouvement Int               @default(0)
+  debitFinal      Int               @default(0)
+  creditFinal     Int               @default(0)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([companyId, exerciceId, compteNumero, periode])
+  @@index([companyId])
+  @@index([exerciceId])
+  @@index([compteNumero])
+}
+
+// Ligne Bilan (Actif/Passif)
+model LigneBilan {
+  id               String            @id @default(cuid())
+  companyId        String
+  company          Company           @relation(fields: [companyId], references: [id])
+  exerciceId       String
+  exercice         ExerciceComptable @relation(fields: [exerciceId], references: [id])
+  rubrique         String // Code rubrique OHADA
+  intitule         String
+  position         String // ACTIF, PASSIF
+  montantBrut      Int               @default(0)
+  amortissement    Int               @default(0)
+  provisions       Int               @default(0)
+  montantNet       Int               @default(0)
+  montantPrecedent Int               @default(0) // Exercice précédent
+  ordre            Int               @default(0)
+  niveau           Int               @default(1) // Niveau dans la hiérarchie
+  parentId         String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([companyId])
+  @@index([exerciceId])
+  @@index([position])
+}
+
+// Ligne Compte de Résultat
+model LigneCompteResultat {
+  id               String            @id @default(cuid())
+  companyId        String
+  company          Company           @relation(fields: [companyId], references: [id])
+  exerciceId       String
+  exercice         ExerciceComptable @relation(fields: [exerciceId], references: [id])
+  rubrique         String
+  intitule         String
+  type             String // CHARGE, PRODUIT
+  montant          Int               @default(0)
+  montantPrecedent Int               @default(0)
+  ordre            Int               @default(0)
+  niveau           Int               @default(1)
+  parentId         String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([companyId])
+  @@index([exerciceId])
+  @@index([type])
+}
+
+// ============================================================================
+// TAUX DE CHANGE (MULTI-DEVISES)
+// ============================================================================
+
+model Devise {
+  id      String  @id @default(cuid())
+  code    String  @unique // GNF, EUR, USD, XOF, XAF, etc.
+  nom     String
+  symbole String
+  pays    String?
+  actif   Boolean @default(true)
+
+  // Relations - taux source et taux cible
+  tauxSource TauxChange[] @relation("TauxSource")
+  tauxCible  TauxChange[] @relation("TauxCible")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([code])
+}
+
+model TauxChange {
+  id             String   @id @default(cuid())
+  deviseSourceId String
+  deviseSource   Devise   @relation("TauxSource", fields: [deviseSourceId], references: [id])
+  deviseCibleId  String
+  deviseCible    Devise   @relation("TauxCible", fields: [deviseCibleId], references: [id])
+  taux           Float // Taux de change
+  dateEffet      DateTime @default(now())
+  source         String? // API, MANUEL, BANQUE_CENTRALE
+  actif          Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([deviseSourceId])
+  @@index([deviseCibleId])
+  @@index([dateEffet])
+}
+
+model ConversionDevise {
+  id              String   @id @default(cuid())
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id])
+  montant         Int // Montant original en centimes
+  deviseSource    String
+  deviseCible     String
+  tauxApplique    Float
+  montantConverti Int // Montant converti en centimes
+  dateConversion  DateTime @default(now())
+  reference       String? // Facture, Paiement, etc.
+  referenceId     String?
+  createdAt       DateTime @default(now())
+
+  @@index([companyId])
+  @@index([dateConversion])
+}
+
+// ============================================================================
+// CRM INTÉGRÉ
+// ============================================================================
+
+// Prospect (Lead)
+model Prospect {
+  id              String        @id @default(cuid())
+  companyId       String
+  company         Company       @relation(fields: [companyId], references: [id])
+  nom             String
+  prenom          String?
+  email           String?
+  telephone       String?
+  entreprise      String?
+  poste           String?
+  adresse         String?
+  ville           String?
+  pays            String        @default("Guinée")
+  source          String? // SITE_WEB, REFERRAL, RESEAUX_SOCIAUX, COLD_CALLING, SALON, AUTRE
+  statut          String        @default("NOUVEAU") // NOUVEAU, CONTACTE, QUALIFIE, PROPOSITION, NEGOCIATION, GAGNE, PERDU
+  score           Int           @default(0) // Score de qualification 0-100
+  budget          Int? // Budget estimé
+  notes           String?
+  tags            String? // JSON array
+  assigneA        String? // ID utilisateur assigné
+  dateContact     DateTime?
+  dateQualif      DateTime?
+  dernierContact  DateTime?
+  prochaineAction DateTime?
+  opportunites    Opportunite[]
+  activites       ActiviteCRM[]
+  clientId        String? // Si converti en client
+  client          Client?       @relation(fields: [clientId], references: [id])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([companyId])
+  @@index([statut])
+  @@index([source])
+  @@index([email])
+}
+
+// Opportunité (Pipeline de vente)
+model Opportunite {
+  id                String        @id @default(cuid())
+  companyId         String
+  company           Company       @relation(fields: [companyId], references: [id])
+  prospectId        String
+  prospect          Prospect      @relation(fields: [prospectId], references: [id])
+  nom               String
+  description       String?
+  montant           Int           @default(0) // En centimes
+  probabilite       Int           @default(0) // 0-100
+  etape             String        @default("PROSPECTION") // PROSPECTION, QUALIFICATION, PROPOSITION, NEGOCIATION, CLOSURE
+  statut            String        @default("EN_COURS") // EN_COURS, GAGNEE, PERDUE, ABANDONNEE
+  source            String?
+  dateCloturePrevue DateTime?
+  dateCloture       DateTime?
+  raisonPerte       String?
+  concurrent        String?
+  activites         ActiviteCRM[]
+  devis             Devis[]
+  clientId          String? // Client si opportunité gagnée
+  client            Client?       @relation(fields: [clientId], references: [id])
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([companyId])
+  @@index([prospectId])
+  @@index([etape])
+  @@index([statut])
+}
+
+// Activité CRM (Tâches, Appels, Emails, Réunions)
+model ActiviteCRM {
+  id            String       @id @default(cuid())
+  companyId     String
+  company       Company      @relation(fields: [companyId], references: [id])
+  prospectId    String?
+  prospect      Prospect?    @relation(fields: [prospectId], references: [id])
+  opportuniteId String?
+  opportunite   Opportunite? @relation(fields: [opportuniteId], references: [id])
+  type          String // APPEL, EMAIL, REUNION, TACHE, NOTE
+  titre         String
+  description   String?
+  dateDebut     DateTime
+  dateFin       DateTime?
+  statut        String       @default("PLANIFIE") // PLANIFIE, EN_COURS, TERMINE, ANNULE
+  priorite      String       @default("NORMALE") // BASSE, NORMALE, HAUTE
+  resultat      String?
+  duree         Int? // Durée en minutes
+  assigneA      String? // ID utilisateur
+  creePar       String? // ID utilisateur créateur
+  rappel        Boolean      @default(false)
+  dateRappel    DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([companyId])
+  @@index([prospectId])
+  @@index([opportuniteId])
+  @@index([type])
+  @@index([dateDebut])
+}
+
+// Pipeline de Vente (Configuration)
+model PipelineVente {
+  id          String          @id @default(cuid())
+  companyId   String
+  company     Company         @relation(fields: [companyId], references: [id])
+  nom         String
+  description String?
+  actif       Boolean         @default(true)
+  ordre       Int             @default(0)
+  etapes      EtapePipeline[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([companyId, nom])
+  @@index([companyId])
+}
+
+model EtapePipeline {
+  id          String        @id @default(cuid())
+  pipelineId  String
+  pipeline    PipelineVente @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  nom         String
+  description String?
+  probabilite Int           @default(0) // Probabilité par défaut
+  couleur     String? // Code couleur hex
+  ordre       Int           @default(0)
+  actif       Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([pipelineId])
+}

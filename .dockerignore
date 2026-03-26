@@ -1,0 +1,128 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Lock files - force fresh install
+package-lock.json
+**/package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build outputs
+.next/
+out/
+build/
+dist/
+backend/dist/
+backend/tsconfig.tsbuildinfo
+
+# Testing
+coverage/
+.nyc_output/
+tests/
+__tests__/
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.*
+.env.local
+.env.development
+.env.production
+
+# Vercel
+.vercel/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Docker compose files (but NOT entrypoint!)
+docker-compose*.yml
+.docker/
+
+# Documentation
+README.md
+CHANGELOG.md
+LICENSE
+docs/
+
+# Skills
+skills/
+
+# Download folder
+download/
+
+# Scripts (but keep docker-entrypoint.sh!)
+.zscripts/
+examples/
+
+# SQLite databases
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Prisma dev
+prisma/dev.db
+backend/prisma/dev.db
+
+# Uploads and data (mounted volumes)
+uploads/
+data/
+
+# SSL certificates
+certbot/
+
+# Misc
+*.pem
+*.key
+*.crt
+
+# Config files
+.editorconfig
+.prettierrc
+.eslintrc*
+.prettierrc*
+
+# Access logs
+.accesslog
+.stats
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Large media files
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.zip
+*.tar.gz
+*.rar
