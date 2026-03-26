@@ -4,6 +4,12 @@ node_modules
 *.tsbuildinfo
 next-env.d.ts
 
+# Build outputs
+dist/
+backend/dist/
+.next/
+out/
+
 # IDE
 .idea/
 .vscode/
@@ -14,6 +20,7 @@ next-env.d.ts
 *.db
 *.db-journal
 db/
+data/
 
 # Lock files
 bun.lock
@@ -24,9 +31,7 @@ yarn.lock
 dev.log
 *.log
 
-# Next.js
-.next/
-out/
+# Environment
 .env
 .env.local
 .env*.local
