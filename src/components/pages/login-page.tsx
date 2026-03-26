@@ -112,7 +112,10 @@ export function LoginPage({ onLogin, onSwitchToRegister }: LoginPageProps) {
             </form>
 
             <div className="mt-6 text-center text-sm text-slate-500">
-              <p>Test: test@guineamanager.com / password123</p>
+              <p className="bg-slate-100 rounded-lg px-3 py-2 mb-2">
+                <span className="font-medium text-slate-700">Demo:</span>{' '}
+                demo@guineamanager.com / demo123
+              </p>
               {onSwitchToRegister && (
                 <p className="mt-2">
                   Pas de compte ?{' '}

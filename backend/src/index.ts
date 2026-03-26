@@ -1,129 +1,125 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import morgan from 'morgan';
+// Backend entry point - uses the complete Express app
+import app from './app';
 import { PrismaClient } from '@prisma/client';
-
-import authRoutes from './routes/auth.routes';
-import clientRoutes from './routes/clients.routes';
-import produitRoutes from './routes/produits.routes';
-import factureRoutes from './routes/factures.routes';
-import employeRoutes from './routes/employes.routes';
-import paieRoutes from './routes/paie.routes';
-import depenseRoutes from './routes/depenses.routes';
-import dashboardRoutes from './routes/dashboard.routes';
-import exportRoutes from './routes/exports.routes';
-import parametresRoutes from './routes/parametres.routes';
-import plansRoutes from './routes/plans.routes';
-import supportRoutes from './routes/support.routes';
-import notificationsRoutes from './routes/notifications.routes';
-import paymentRoutes from './routes/payment.routes';
-import twoFactorRoutes from './routes/auth-2fa.routes';
-import stockRoutes from './routes/stock.routes';
-import devisRoutes from './routes/devis.routes';
-import commandesRoutes from './routes/commandes.routes';
-import fournisseursRoutes from './routes/fournisseurs.routes';
-import comptabiliteRoutes from './routes/comptabilite.routes';
-import crmRoutes from './routes/crm.routes';
-import devisesRoutes from './routes/devises.routes';
-import apiDocsRoutes from './routes/api-docs.routes';
-import orangeMoneyRoutes from './routes/orange-money.routes';
-import adminRoutes from './routes/admin.routes';
+import bcrypt from 'bcryptjs';
 
 export const prisma = new PrismaClient();
 
-const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middlewares
-app.use(helmet());
-app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
-  credentials: true
-}));
-app.use(morgan('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Initialize database on first run
+async function initializeDatabase() {
+  try {
+    // Check if database has any users
+    const userCount = await prisma.user.count();
+    
+    if (userCount === 0) {
+      console.log('🔧 First run detected - initializing database...');
+      
+      // Create subscription plans
+      const plans = [
+        { id: 'petite', nom: 'PETITE', description: 'Idéal pour les petites entreprises', prixMensuel: 0, prixAnnuel: 0, maxEmployes: 5, maxUtilisateurs: 2, maxClients: 50, maxProduits: 100, maxFacturesMois: 30, modules: 'facturation,clients,produits,dashboard', support: 'email', sauvegardeAuto: true, apiAccess: false, personnalisation: false, multiSociete: false, rapportsAvances: false },
+        { id: 'moyenne', nom: 'MOYENNE', description: 'Conçu pour les PME en croissance', prixMensuel: 50000_00, prixAnnuel: 500000_00, maxEmployes: 25, maxUtilisateurs: 5, maxClients: 200, maxProduits: 500, maxFacturesMois: 200, modules: 'facturation,clients,produits,employes,paie,depenses,rapports,dashboard', support: 'chat', sauvegardeAuto: true, apiAccess: true, personnalisation: true, multiSociete: false, rapportsAvances: true },
+        { id: 'grande', nom: 'GRANDE', description: 'Pour les entreprises établies', prixMensuel: 150000_00, prixAnnuel: 1500000_00, maxEmployes: 100, maxUtilisateurs: 15, maxClients: 1000, maxProduits: 2000, maxFacturesMois: 1000, modules: 'facturation,clients,produits,employes,paie,depenses,rapports,parametres,dashboard', support: 'phone', sauvegardeAuto: true, apiAccess: true, personnalisation: true, multiSociete: true, rapportsAvances: true },
+        { id: 'enterprise', nom: 'ENTERPRISE', description: 'Solution sur mesure', prixMensuel: 500000_00, prixAnnuel: 5000000_00, maxEmployes: -1, maxUtilisateurs: -1, maxClients: -1, maxProduits: -1, maxFacturesMois: -1, modules: 'all', support: 'dedicated', sauvegardeAuto: true, apiAccess: true, personnalisation: true, multiSociete: true, rapportsAvances: true }
+      ];
 
-// Routes principales
-app.use('/api/auth', authRoutes);
-app.use('/api/auth', twoFactorRoutes);
-app.use('/api/clients', clientRoutes);
-app.use('/api/produits', produitRoutes);
-app.use('/api/factures', factureRoutes);
-app.use('/api/employes', employeRoutes);
-app.use('/api/paie', paieRoutes);
-app.use('/api/depenses', depenseRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/exports', exportRoutes);
-app.use('/api/parametres', parametresRoutes);
-app.use('/api/plans', plansRoutes);
-app.use('/api/support', supportRoutes);
-app.use('/api/notifications', notificationsRoutes);
-app.use('/api/payments', paymentRoutes);
+      for (const plan of plans) {
+        await prisma.planAbonnement.upsert({
+          where: { id: plan.id },
+          update: plan,
+          create: plan
+        });
+      }
+      console.log('  ✓ Plans d\'abonnement créés');
 
-// Nouvelles routes (Priority 2 & 3)
-app.use('/api/stock', stockRoutes);
-app.use('/api/devis', devisRoutes);
-app.use('/api/commandes', commandesRoutes);
-app.use('/api/fournisseurs', fournisseursRoutes);
-app.use('/api/comptabilite', comptabiliteRoutes);
-app.use('/api/crm', crmRoutes);
-app.use('/api/devises', devisesRoutes);
-app.use('/api/docs', apiDocsRoutes);
-app.use('/api/paiements-mobile', orangeMoneyRoutes);
-app.use('/api/admin', adminRoutes);
+      // Create demo company
+      const company = await prisma.company.upsert({
+        where: { id: 'demo-company-001' },
+        update: {},
+        create: {
+          id: 'demo-company-001',
+          nom: 'Entreprise Demo SARL',
+          email: 'demo@guineamanager.com',
+          telephone: '+224 624 00 00 00',
+          adresse: 'Conakry, Guinée',
+          ville: 'Conakry',
+          pays: 'Guinée',
+          codePays: 'GN',
+          devise: 'GNF',
+          symboleDevise: 'GNF',
+          planId: 'moyenne',
+          dateDebutAbonnement: new Date(),
+          dateFinAbonnement: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+        }
+      });
+      console.log('  ✓ Société de démo créée');
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
+      // Create demo user
+      const hashedPassword = await bcrypt.hash('demo123', 10);
+      await prisma.user.upsert({
+        where: { email: 'demo@guineamanager.com' },
+        update: {},
+        create: {
+          id: 'demo-user-001',
+          email: 'demo@guineamanager.com',
+          password: hashedPassword,
+          nom: 'Demo',
+          prenom: 'Admin',
+          telephone: '+224 624 00 00 00',
+          role: 'ADMIN',
+          companyId: company.id,
+          emailVerifie: true
+        }
+      });
+      console.log('  ✓ Utilisateur de démo créé');
 
-// Root endpoint
-app.get('/api', (req, res) => {
-  res.json({
-    name: 'GuinéaManager API',
-    version: '1.0.0',
-    description: 'ERP SaaS pour PME ouest-africaines',
-    endpoints: {
-      auth: '/api/auth',
-      clients: '/api/clients',
-      produits: '/api/produits',
-      factures: '/api/factures',
-      employes: '/api/employes',
-      paie: '/api/paie',
-      depenses: '/api/depenses',
-      dashboard: '/api/dashboard',
-      stock: '/api/stock',
-      devis: '/api/devis',
-      commandes: '/api/commandes',
-      fournisseurs: '/api/fournisseurs',
-      comptabilite: '/api/comptabilite',
-      crm: '/api/crm',
-      devises: '/api/devises',
-      documentation: '/api/docs',
+      console.log('');
+      console.log('════════════════════════════════════════════════════════════');
+      console.log('✅ BASE DE DONNÉES INITIALISÉE!');
+      console.log('🔑 Identifiants de connexion:');
+      console.log('   Email: demo@guineamanager.com');
+      console.log('   Mot de passe: demo123');
+      console.log('════════════════════════════════════════════════════════════');
+      console.log('');
     }
-  });
-});
+  } catch (error) {
+    console.error('❌ Database initialization error:', error);
+  }
+}
 
-// Error handler
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || 'Erreur serveur',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-  });
-});
+// Start server
+async function start() {
+  try {
+    await prisma.$connect();
+    console.log('📊 Database connected');
+    
+    await initializeDatabase();
+    
+    app.listen(PORT, () => {
+      console.log(`🚀 GuinéaManager API running on http://localhost:${PORT}`);
+      console.log(`📚 API Documentation: http://localhost:${PORT}/api/docs`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    await prisma.$disconnect();
+    process.exit(1);
+  }
+}
 
-// Graceful shutdown
+// Handle shutdown
 process.on('SIGINT', async () => {
+  console.log('\n⏹️ Shutting down...');
   await prisma.$disconnect();
   process.exit(0);
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 GuinéaManager API running on http://localhost:${PORT}`);
+process.on('SIGTERM', async () => {
+  console.log('\n⏹️ Shutting down...');
+  await prisma.$disconnect();
+  process.exit(0);
 });
+
+start();
 
 export default app;
