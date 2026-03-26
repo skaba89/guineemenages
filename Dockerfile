@@ -42,7 +42,10 @@ COPY backend/tsconfig.json ./backend/
 WORKDIR /app/backend
 ENV DATABASE_URL="file:/app/data/prod.db"
 RUN npx prisma generate && \
-    npx tsc --skipLibCheck 2>&1 || true
+    npx tsc --skipLibCheck
+
+# Verify backend was compiled
+RUN ls -la dist/ && test -f dist/index.js
 
 # ===== BUILD FRONTEND =====
 WORKDIR /app

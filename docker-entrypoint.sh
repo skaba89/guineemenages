@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-echo "🚀 Starting Guineamanager ERP..."
+echo "🚀 Starting GuinéaManager ERP..."
 echo ""
 
 # Create necessary directories
@@ -17,23 +17,28 @@ echo "🔧 Starting backend API on port 3001..."
 cd /app/backend
 export PORT=3001
 
-# Run database migration if needed (creates tables)
-if [ ! -f /app/data/prod.db ]; then
-  echo "📦 Creating database tables..."
-  npx prisma db push --skip-generate 2>&1 || true
-fi
+# Always run database migration to ensure tables exist
+echo "📦 Ensuring database tables exist..."
+npx prisma db push --skip-generate 2>&1 || echo "Warning: db push had issues, continuing..."
 
 # Start backend (it will auto-initialize demo data if needed)
+echo "🔧 Starting backend server..."
 node dist/index.js &
 BACKEND_PID=$!
-sleep 3
 
-# Verify backend is running
-if kill -0 $BACKEND_PID 2>/dev/null; then
-  echo "✅ Backend started successfully"
-else
-  echo "⚠️ Backend may have issues, check logs"
-fi
+# Wait for backend to be ready
+echo "⏳ Waiting for backend to be ready..."
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  if curl -s http://localhost:3001/health > /dev/null 2>&1; then
+    echo "✅ Backend is ready!"
+    break
+  fi
+  if [ $i -eq 10 ]; then
+    echo "⚠️ Backend health check timeout, continuing anyway..."
+  else
+    sleep 1
+  fi
+done
 
 # Start frontend on port 3000
 echo "🌐 Starting frontend on port 3000..."

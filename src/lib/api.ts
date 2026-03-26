@@ -1,7 +1,9 @@
 // API Client for GuinéaManager Backend
 // This file provides the interface between the frontend and the backend API
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+// Use relative URL '/api' to leverage Next.js API proxy for Docker deployment
+// This ensures the frontend communicates with the backend through the proxy
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 interface ApiResponse<T = any> {
   success: boolean;

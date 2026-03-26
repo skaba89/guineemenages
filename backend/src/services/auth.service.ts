@@ -51,7 +51,7 @@ export const registerWithCompany = async (
         nom: userData.nom,
         prenom: userData.prenom,
         telephone: userData.telephone,
-        role: 'admin',
+        role: 'ADMIN',
         companyId: company.id,
         verificationToken,
         verificationTokenExpiry,
@@ -284,7 +284,7 @@ export const createDefaultAdmin = async (): Promise<void> => {
       password: hashedPassword,
       nom: 'Admin',
       prenom: 'System',
-      role: 'admin',
+      role: 'ADMIN',
       companyId: company.id,
     },
   });
