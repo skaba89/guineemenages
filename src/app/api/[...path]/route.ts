@@ -50,8 +50,17 @@ async function proxyRequest(
     const url = new URL(request.url);
     const queryString = url.search;
     
-    // Build target URL
-    const targetUrl = `${BACKEND_URL}/api/${pathString}${queryString}`;
+    // Build target URL - backend routes are already under /api/
+    // So we forward to /api/{path} for normal routes
+    // Special case for health endpoint
+    let targetUrl: string;
+    if (pathString === 'health') {
+      // Health check is at root level on backend
+      targetUrl = `${BACKEND_URL}/health${queryString}`;
+    } else {
+      // All other routes are under /api/ on backend
+      targetUrl = `${BACKEND_URL}/api/${pathString}${queryString}`;
+    }
     
     // Get request headers
     const headers: HeadersInit = {};
@@ -85,6 +94,8 @@ async function proxyRequest(
         // No body
       }
     }
+    
+    console.log(`[Proxy] ${method} ${targetUrl}`);
     
     // Make request to backend
     const response = await fetch(targetUrl, fetchOptions);
