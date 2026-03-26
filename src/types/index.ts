@@ -1,5 +1,28 @@
 // Types pour GuinéaManager ERP
 
+// Plan types - must match backend Prisma schema
+export type PlanType = 'petite' | 'moyenne' | 'grande' | 'enterprise';
+
+export interface PlanAbonnement {
+  id: PlanType;
+  nom: string;
+  description?: string;
+  prixMensuel: number;
+  prixAnnuel: number;
+  maxEmployes: number;
+  maxUtilisateurs: number;
+  maxClients: number;
+  maxProduits: number;
+  maxFacturesMois: number;
+  modules: string;
+  support: string;
+  sauvegardeAuto: boolean;
+  apiAccess: boolean;
+  personnalisation: boolean;
+  multiSociete: boolean;
+  rapportsAvances: boolean;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -10,6 +33,7 @@ export interface User {
   companyId: string;
   company?: Company;
   actif: boolean;
+  emailVerifie?: boolean;
   createdAt: string;
 }
 
@@ -21,10 +45,15 @@ export interface Company {
   adresse?: string;
   ville?: string;
   pays: string;
+  codePays?: string;
   ninea?: string;
   logo?: string;
-  plan: 'FREE' | 'STANDARD' | 'ENTERPRISE';
+  planId: PlanType;
+  planAbonnement?: PlanAbonnement;
   devise: string;
+  symboleDevise: string;
+  dateDebutAbonnement?: string;
+  dateFinAbonnement?: string;
 }
 
 export interface Client {

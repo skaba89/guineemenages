@@ -1,186 +1,97 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hors Ligne - GuinéaManager</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    
-    .container {
-      text-align: center;
-      max-width: 400px;
-    }
-    
-    .logo {
-      width: 80px;
-      height: 80px;
-      background: linear-gradient(135deg, #16a34a 0%, #10b981 100%);
-      border-radius: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 30px;
-      box-shadow: 0 10px 40px rgba(22, 163, 74, 0.3);
-    }
-    
-    .logo span {
-      color: white;
-      font-size: 40px;
-      font-weight: bold;
-    }
-    
-    h1 {
-      color: #1f2937;
-      font-size: 28px;
-      margin-bottom: 15px;
-    }
-    
-    p {
-      color: #6b7280;
-      font-size: 16px;
-      line-height: 1.6;
-      margin-bottom: 30px;
-    }
-    
-    .icon {
-      width: 120px;
-      height: 120px;
-      margin: 0 auto 30px;
-      opacity: 0.8;
-    }
-    
-    .retry-btn {
-      background: linear-gradient(135deg, #16a34a 0%, #10b981 100%);
-      color: white;
-      border: none;
-      padding: 15px 40px;
-      font-size: 16px;
-      font-weight: 600;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    
-    .retry-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 30px rgba(22, 163, 74, 0.3);
-    }
-    
-    .tips {
-      margin-top: 40px;
-      padding: 20px;
-      background: white;
-      border-radius: 15px;
-      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
-    }
-    
-    .tips h3 {
-      color: #374151;
-      font-size: 16px;
-      margin-bottom: 15px;
-    }
-    
-    .tips ul {
-      text-align: left;
-      color: #6b7280;
-      font-size: 14px;
-    }
-    
-    .tips li {
-      margin-bottom: 8px;
-      padding-left: 20px;
-      position: relative;
-    }
-    
-    .tips li::before {
-      content: '✓';
-      position: absolute;
-      left: 0;
-      color: #16a34a;
-    }
-    
-    .cached-info {
-      margin-top: 20px;
-      padding: 15px;
-      background: #f0fdf4;
-      border-radius: 10px;
-      border: 1px solid #bbf7d0;
-    }
-    
-    .cached-info p {
-      color: #166534;
-      font-size: 14px;
-      margin: 0;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GuinéaManager - Hors ligne</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            max-width: 400px;
+        }
+        .icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .icon svg {
+            width: 40px;
+            height: 40px;
+        }
+        h1 {
+            font-size: 1.75rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+        p {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        button {
+            background: white;
+            color: #16a34a;
+            border: none;
+            padding: 0.875rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .logo {
+            margin-bottom: 2rem;
+        }
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <div class="logo">
-      <span>G</span>
+    <div class="container">
+        <div class="logo">
+            <div class="logo-text">GuinéaManager</div>
+        </div>
+        <div class="icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414" />
+            </svg>
+        </div>
+        <h1>Vous êtes hors ligne</h1>
+        <p>
+            Vérifiez votre connexion internet et réessayez. 
+            GuinéaManager nécessite une connexion pour fonctionner.
+        </p>
+        <button onclick="window.location.reload()">
+            Réessayer
+        </button>
     </div>
-    
-    <svg class="icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="50" cy="50" r="45" stroke="#16a34a" stroke-width="2" stroke-dasharray="10 5"/>
-      <path d="M50 25V50L65 65" stroke="#16a34a" stroke-width="4" stroke-linecap="round"/>
-      <circle cx="50" cy="50" r="5" fill="#16a34a"/>
-      <path d="M30 75C30 75 35 65 50 65C65 65 70 75 70 75" stroke="#16a34a" stroke-width="3" stroke-linecap="round"/>
-      <line x1="20" y1="80" x2="80" y2="80" stroke="#16a34a" stroke-width="2" stroke-dasharray="5 5"/>
-    </svg>
-    
-    <h1>Vous êtes hors ligne</h1>
-    
-    <p>
-      GuinéaManager nécessite une connexion Internet pour fonctionner. 
-      Vérifiez votre connexion et réessayez.
-    </p>
-    
-    <button class="retry-btn" onclick="window.location.reload()">
-      Réessayer
-    </button>
-    
-    <div class="tips">
-      <h3>Conseils pour vous reconnecter:</h3>
-      <ul>
-        <li>Vérifiez votre connexion Wi-Fi ou mobile</li>
-        <li>Activez le mode avion puis désactivez-le</li>
-        <li>Redémarrez votre routeur si nécessaire</li>
-        <li>Essayez de vous rapprocher d'une source Wi-Fi</li>
-      </ul>
-    </div>
-    
-    <div class="cached-info">
-      <p>📁 Vos données sont sauvegardées localement et seront synchronisées automatiquement dès votre reconnexion.</p>
-    </div>
-  </div>
-  
-  <script>
-    // Check if we're back online
-    window.addEventListener('online', () => {
-      window.location.reload();
-    });
-    
-    // Register for background sync if supported
-    if ('serviceWorker' in navigator && 'SyncManager' in window) {
-      navigator.serviceWorker.ready.then((registration) => {
-        // Will sync when back online
-      });
-    }
-  </script>
 </body>
 </html>
